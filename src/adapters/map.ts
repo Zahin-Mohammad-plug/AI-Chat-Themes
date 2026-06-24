@@ -44,6 +44,13 @@ const chatgpt: HostAdapter = {
       style: { 'background-color': 'bg.app', color: 'text.primary' },
     },
     { id: 'app.main', selector: 'main', style: { 'background-color': 'bg.app' } },
+    {
+      // ChatGPT's sticky top bar hardcodes a near-black bg; it blends into dark
+      // themes but stands out under light themes, so map it explicitly.
+      id: 'app.header',
+      selector: 'header',
+      style: { 'background-color': 'bg.app', color: 'text.primary' },
+    },
     { id: 'app.sidebar', selector: 'nav', style: { 'background-color': 'sidebar.bg' } },
     {
       id: 'composer.input',
@@ -93,6 +100,11 @@ const claude: HostAdapter = {
       style: { 'background-color': 'bg.app', color: 'text.primary' },
     },
     { id: 'app.main', selector: 'main', style: { 'background-color': 'bg.app' } },
+    {
+      id: 'app.header',
+      selector: 'header',
+      style: { 'background-color': 'bg.app', color: 'text.primary' },
+    },
     {
       id: 'codeblock.body',
       selector: 'pre',
