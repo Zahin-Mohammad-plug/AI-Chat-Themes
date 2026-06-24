@@ -1,0 +1,120 @@
+// Bundled fallback adapter map — PRD Section 5.3.
+// Ships in the package so the extension works offline and on day one of a host
+// change. A remote, integrity-checked map (M3) may supersede this at runtime,
+// but this snapshot is always the safe fallback.
+
+import type { HostId } from '@/src/themes/types';
+import type { AdapterMap, HostAdapter } from './types';
+
+const chatgpt: HostAdapter = {
+  host: 'chatgpt',
+  fingerprint: 'chatgpt-2024-tokens',
+  tokenFormat: 'color',
+  // Tier 1: ChatGPT exposes plain-color CSS custom properties.
+  tokenVars: {
+    '--bg-primary': 'bg.app',
+    '--bg-secondary': 'bg.surface',
+    '--bg-tertiary': 'bg.elevated',
+    '--main-surface-primary': 'bg.surface',
+    '--main-surface-secondary': 'bg.elevated',
+    '--main-surface-tertiary': 'bg.elevated',
+    '--message-surface': 'bg.surface',
+    '--composer-surface': 'composer.bg',
+    '--sidebar-surface-primary': 'sidebar.bg',
+    '--sidebar-surface-secondary': 'bg.surface',
+    '--sidebar-surface-tertiary': 'bg.elevated',
+    '--surface-primary': 'bg.surface',
+    '--surface-secondary': 'bg.elevated',
+    '--text-primary': 'text.primary',
+    '--text-secondary': 'text.secondary',
+    '--text-tertiary': 'text.tertiary',
+    '--text-quaternary': 'text.tertiary',
+    '--border-light': 'border.hairline',
+    '--border-medium': 'border.hairline',
+    '--border-heavy': 'border.hairline',
+    '--border-default': 'border.hairline',
+    '--link': 'accent',
+    '--link-hover': 'accent',
+  },
+  // Tier 2-3: semantic anchors covering surfaces the tokens may miss.
+  anchors: [
+    {
+      id: 'app.shell',
+      selector: 'html, body',
+      style: { 'background-color': 'bg.app', color: 'text.primary' },
+    },
+    { id: 'app.main', selector: 'main', style: { 'background-color': 'bg.app' } },
+    { id: 'app.sidebar', selector: 'nav', style: { 'background-color': 'sidebar.bg' } },
+    {
+      id: 'composer.input',
+      selector: '#prompt-textarea',
+      style: { color: 'text.primary' },
+    },
+    {
+      id: 'codeblock.body',
+      selector: 'pre',
+      style: { 'background-color': 'code.bg', color: 'text.primary' },
+    },
+  ],
+};
+
+const claude: HostAdapter = {
+  host: 'claude',
+  fingerprint: 'claude-2024-hsl',
+  tokenFormat: 'hsl-triple',
+  // Tier 1: Claude consumes design tokens as `hsl(var(--token))`, so the engine
+  // emits bare "H S% L%" triples for these (see TokenFormat).
+  tokenVars: {
+    '--bg-000': 'bg.app',
+    '--bg-100': 'bg.surface',
+    '--bg-200': 'bg.elevated',
+    '--bg-300': 'bg.elevated',
+    '--bg-400': 'bg.elevated',
+    '--bg-500': 'bg.elevated',
+    '--text-000': 'text.primary',
+    '--text-100': 'text.primary',
+    '--text-200': 'text.secondary',
+    '--text-300': 'text.secondary',
+    '--text-400': 'text.tertiary',
+    '--text-500': 'text.tertiary',
+    '--border-100': 'border.hairline',
+    '--border-200': 'border.hairline',
+    '--border-300': 'border.hairline',
+    '--accent-main-000': 'accent',
+    '--accent-main-100': 'accent',
+    '--accent-main-200': 'accent',
+    '--accent-secondary-000': 'accent',
+    '--accent-secondary-100': 'accent',
+  },
+  anchors: [
+    {
+      id: 'app.shell',
+      selector: 'html, body',
+      style: { 'background-color': 'bg.app', color: 'text.primary' },
+    },
+    { id: 'app.main', selector: 'main', style: { 'background-color': 'bg.app' } },
+    {
+      id: 'codeblock.body',
+      selector: 'pre',
+      style: { 'background-color': 'code.bg' },
+    },
+  ],
+};
+
+export const BUNDLED_ADAPTER_MAP: AdapterMap = {
+  version: 1,
+  killSwitch: {},
+  hosts: { chatgpt, claude },
+};
+
+export function hostFromUrl(url: string | undefined): HostId | null {
+  if (!url) return null;
+  try {
+    const host = new URL(url).hostname;
+    if (host === 'chatgpt.com' || host.endsWith('.chatgpt.com')) return 'chatgpt';
+    if (host === 'claude.ai' || host.endsWith('.claude.ai')) return 'claude';
+  } catch {
+    /* not a parseable URL */
+  }
+  return null;
+}
