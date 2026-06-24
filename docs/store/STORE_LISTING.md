@@ -69,10 +69,9 @@ must resolve before the listing will pass review.
 
 ## ⚠️ Blockers before submission
 
-1. **Real icons.** `public/icon/*.png` are generated placeholders (a plain accent
-   square). Replace with real artwork (16/32/48/128 px) — a placeholder icon
-   risks a low-quality rejection and looks unprofessional. Re-run
-   `node scripts/generate-icons.mjs` only as a stopgap.
+1. ~~Real icons.~~ **Done.** `public/icon/*.png` are rendered from
+   `assets/icon.svg` (a split light/dark chat bubble on a violet tile) via
+   `node scripts/render-icons.mjs`. Sizes 16/32/48/96/128 present.
 2. **Screenshots.** The store requires at least one 1280×800 (or 640×400)
    screenshot. Capture the popup + a themed ChatGPT and Claude page. (Optional
    but recommended: a 440×280 small promo tile.)

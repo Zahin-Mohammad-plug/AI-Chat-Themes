@@ -61,9 +61,9 @@ advanced-CSS sandbox. The architecture leaves clean seams for each (see below).
 8. **Kill switch present in the bundled map** as a data flag and honored by the
    content script, even though the remote update channel that would set it is
    M3. This keeps the consumer logic complete now.
-9. **Icons** are generated placeholders (accent rounded-square on dark) via a
-   zlib PNG script — no native image deps. Flagged for real artwork before store
-   submission.
+9. **Icons** are real artwork: `assets/icon.svg` (a split light/dark chat bubble
+   on a violet gradient tile) rasterized to 16/32/48/96/128 px via headless
+   Chrome (`scripts/render-icons.mjs`) — no native image deps.
 
 ## Assumptions
 

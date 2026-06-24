@@ -41,7 +41,8 @@ pnpm lint           # ESLint
 pnpm format         # Prettier
 ```
 
-Icons are generated placeholders: `node scripts/generate-icons.mjs`.
+Icons are rendered from `assets/icon.svg` via headless Chrome:
+`node scripts/render-icons.mjs`.
 
 ## Load the extension
 
