@@ -5,7 +5,7 @@ import prettier from 'eslint-config-prettier';
 
 export default [
   {
-    ignores: ['node_modules', '.output', '.wxt', '*.config.js', '*.config.ts'],
+    ignores: ['node_modules', '.output', '.wxt', 'scripts/**', '*.config.js', '*.config.ts'],
   },
   js.configs.recommended,
   {

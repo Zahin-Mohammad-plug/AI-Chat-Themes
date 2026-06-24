@@ -6,7 +6,7 @@ import { defineContentScript } from 'wxt/sandbox';
 import { BUNDLED_ADAPTER_MAP, hostFromUrl } from '@/src/adapters/map';
 import { applyThemeToDocument, injectCloak, removeCloak, removeTheme } from '@/src/engine/apply';
 import { runHealthCheck } from '@/src/engine/health';
-import { startObserver, type ObserverHandle } from '@/src/engine/observer';
+import { startObserver } from '@/src/engine/observer';
 import {
   activeThemeForHost,
   getSettings,
@@ -64,13 +64,9 @@ export default defineContentScript({
     const killed = BUNDLED_ADAPTER_MAP.killSwitch?.[host] === true;
 
     // 1) Pre-paint cloak from the synchronous snapshot (no white flash).
-    let cloaked = false;
     if (!killed) {
       const snap = readCloakSnapshot(host);
-      if (snap) {
-        injectCloak(snap.bg, snap.text);
-        cloaked = true;
-      }
+      if (snap) injectCloak(snap.bg, snap.text);
     }
 
     // 2) Failsafe: reveal unconditionally after a short bound, even on failure.
@@ -80,7 +76,6 @@ export default defineContentScript({
       removeCloak();
     };
 
-    let observer: ObserverHandle | null = null;
     let activeTheme: Theme | null = null;
 
     const apply = (settings: Settings): void => {
@@ -111,7 +106,7 @@ export default defineContentScript({
       .then((settings) => {
         apply(settings);
         startWhenReady(() => {
-          observer = startObserver(() => {
+          startObserver(() => {
             if (activeTheme) applyThemeToDocument(activeTheme, adapter);
           });
         });
@@ -119,10 +114,6 @@ export default defineContentScript({
       .catch(() => reveal());
 
     onSettingsChanged((settings) => apply(settings));
-
-    if (cloaked) {
-      // keep type-checker happy about the variable being used in all branches
-    }
   },
 });
 
