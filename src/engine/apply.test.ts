@@ -7,11 +7,13 @@ import type { Theme } from '@/src/themes/types';
 
 const dark = getBuiltin('builtin-dark') as Theme;
 
-/** Minimal documentElement stub for color-mode tests (vitest runs in node). */
-function fakeDoc(initialClass = '', attrs: Record<string, string> = {}) {
+/** Minimal element stub with classList/attribute support. */
+function fakeEl(initialClass = '', attrs: Record<string, string> = {}) {
   const classes = new Set(initialClass.split(' ').filter(Boolean));
   const a: Record<string, string> = { ...attrs };
-  const documentElement = {
+  return {
+    classes,
+    attrs: a,
     classList: {
       contains: (c: string) => classes.has(c),
       toggle: (c: string, on?: boolean) => {
@@ -20,6 +22,7 @@ function fakeDoc(initialClass = '', attrs: Record<string, string> = {}) {
         else classes.delete(c);
         return want;
       },
+      remove: (c: string) => classes.delete(c),
     },
     getAttribute: (n: string) => (n in a ? a[n] : null),
     setAttribute: (n: string, v: string) => {
@@ -30,7 +33,16 @@ function fakeDoc(initialClass = '', attrs: Record<string, string> = {}) {
     },
     style: { colorScheme: '' },
   };
-  return { doc: { documentElement } as unknown as Document, classes, attrs: a, documentElement };
+}
+
+/** Minimal document stub for color-mode tests (vitest runs in node). */
+function fakeDoc(initialClass = '', attrs: Record<string, string> = {}, scopeEls: any[] = []) {
+  const documentElement = fakeEl(initialClass, attrs);
+  const doc = {
+    documentElement,
+    querySelectorAll: (_sel: string) => scopeEls,
+  } as unknown as Document;
+  return { doc, classes: documentElement.classes, attrs: documentElement.attrs, documentElement };
 }
 
 describe('buildThemeCss (ChatGPT, color format)', () => {
@@ -91,6 +103,16 @@ describe('applyColorMode — Claude (attribute mechanism)', () => {
     const f = fakeDoc('', { 'data-mode': 'light' });
     applyColorMode('dark', adapter, f.doc);
     expect(f.attrs['data-mode']).toBe('dark');
+  });
+
+  it('propagates the mode to scope elements (.cds-root) and clears on restore', () => {
+    const cds = fakeEl();
+    const f = fakeDoc('', {}, [cds]);
+    applyColorMode('dark', adapter, f.doc);
+    expect(cds.attrs['data-mode']).toBe('dark'); // scope marked dark
+    const snap = captureColorMode(adapter, f.doc);
+    restoreColorMode(adapter, snap, f.doc);
+    expect('data-mode' in cds.attrs).toBe(false); // scope marker cleared
   });
 });
 

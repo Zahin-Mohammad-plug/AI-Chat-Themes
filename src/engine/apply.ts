@@ -99,11 +99,22 @@ export function captureColorMode(adapter: HostAdapter, doc: Document = document)
   return snap;
 }
 
+function setMode(el: Element, m: NonNullable<HostAdapter['colorMode']>, wantDark: boolean): void {
+  if (m.type === 'class') el.classList.toggle(m.name, wantDark);
+  else el.setAttribute(m.name, wantDark ? m.darkValue : m.lightValue);
+}
+
+function clearMode(el: Element, m: NonNullable<HostAdapter['colorMode']>): void {
+  if (m.type === 'class') el.classList.remove(m.name);
+  else el.removeAttribute(m.name);
+}
+
 /**
  * Sync the host's own light/dark mode to the theme base (PRD 16: extension theme
  * wins on themed surfaces). Without this, the host's framework styles (Tailwind
  * `dark:` utilities) fight a mismatched theme — e.g. a light theme leaves
- * ChatGPT's menus/settings dark and unreadable.
+ * ChatGPT's menus/settings dark, and a dark theme leaves Claude's design-system
+ * message text black. Propagates to `scopes` (nested design-system roots) too.
  */
 export function applyColorMode(
   base: ThemeBase,
@@ -112,11 +123,12 @@ export function applyColorMode(
 ): void {
   const m = adapter.colorMode;
   if (!m) return;
-  const de = doc.documentElement;
   const wantDark = base !== 'light';
-  if (m.type === 'class') de.classList.toggle(m.name, wantDark);
-  else de.setAttribute(m.name, wantDark ? m.darkValue : m.lightValue);
-  de.style.colorScheme = wantDark ? 'dark' : 'light';
+  setMode(doc.documentElement, m, wantDark);
+  doc.documentElement.style.colorScheme = wantDark ? 'dark' : 'light';
+  for (const sel of m.scopes ?? []) {
+    doc.querySelectorAll(sel).forEach((el) => setMode(el, m, wantDark));
+  }
 }
 
 /** Restore the host's native color-mode (used when theming is turned off). */
@@ -133,6 +145,8 @@ export function restoreColorMode(
     else de.setAttribute(m.name, snap.attrValue);
   }
   de.style.colorScheme = snap.colorScheme;
+  // Scope markers were ours; the host manages those elements natively, so clear.
+  if (m) for (const sel of m.scopes ?? []) doc.querySelectorAll(sel).forEach((el) => clearMode(el, m));
 }
 
 /**

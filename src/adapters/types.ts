@@ -30,8 +30,13 @@ export interface AnchorRule {
  * ChatGPT toggles a class, Claude toggles an attribute.
  */
 export type ColorModeSpec =
-  | { type: 'class'; name: string }
-  | { type: 'attribute'; name: string; darkValue: string; lightValue: string };
+  | { type: 'class'; name: string; scopes?: string[] }
+  | { type: 'attribute'; name: string; darkValue: string; lightValue: string; scopes?: string[] };
+//
+// `scopes` are extra selectors whose elements ALSO carry the mode marker. Some
+// hosts nest an independent design-system scope (e.g. Claude's `.cds-root`,
+// which reads `data-mode` on itself, not from <html>) — without propagating the
+// mode there, message text renders in the wrong scheme (black on dark).
 
 export interface HostAdapter {
   host: HostId;

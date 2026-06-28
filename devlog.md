@@ -1,5 +1,23 @@
 # Devlog
 
+## 2026-06-28 — Fix: Claude response text black-on-dark (cds-root scope, v0.1.2)
+
+**Bug:** on a dark theme, Claude's assistant message text rendered near-black
+(`rgb(11,11,11)`) on the dark surface. Diagnosed live: Claude's newer design
+system wraps message content in `.cds-root`, which defines its *own* token scale
+and reads `data-mode` **on the element itself** — our `<html>[data-mode]` didn't
+reach it, so cds defaulted to light (black text). 36 such roots on a long chat,
+none carrying `data-mode`.
+
+**Fix:** `ColorModeSpec` gained optional `scopes: string[]`; Claude's adapter
+sets `scopes: ['.cds-root']`. `applyColorMode` now propagates the mode marker to
+every scope element as well as `<html>`, and `restoreColorMode` clears them. The
+existing debounced observer re-applies as new message roots stream in. Verified
+live (setting `data-mode=dark` on the 36 cds-roots turned response text white).
+25 tests (1 new). v0.1.2.
+
+
+
 ## 2026-06-28 — Fix: light themes broke host menus/modals (v0.1.1)
 
 **Bug (reported on ChatGPT settings/menus in light mode):** the engine overrode

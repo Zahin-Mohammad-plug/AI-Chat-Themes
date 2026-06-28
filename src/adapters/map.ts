@@ -72,8 +72,17 @@ const claude: HostAdapter = {
   host: 'claude',
   fingerprint: 'claude-2024-hsl',
   tokenFormat: 'hsl-triple',
-  // Claude expresses mode via a `data-mode` attribute on <html>.
-  colorMode: { type: 'attribute', name: 'data-mode', darkValue: 'dark', lightValue: 'light' },
+  // Claude expresses mode via a `data-mode` attribute on <html>. Its newer
+  // design-system layer (`.cds-root`, which wraps message content) reads
+  // `data-mode` on the element itself, so we propagate the mode there too —
+  // otherwise response text renders light-mode (black) on a dark theme.
+  colorMode: {
+    type: 'attribute',
+    name: 'data-mode',
+    darkValue: 'dark',
+    lightValue: 'light',
+    scopes: ['.cds-root'],
+  },
   // Tier 1: Claude consumes design tokens as `hsl(var(--token))`, so the engine
   // emits bare "H S% L%" triples for these (see TokenFormat).
   tokenVars: {
