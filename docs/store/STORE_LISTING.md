@@ -72,10 +72,14 @@ must resolve before the listing will pass review.
 1. ~~Real icons.~~ **Done.** `public/icon/*.png` are rendered from
    `assets/icon.svg` (a split light/dark chat bubble on a violet tile) via
    `node scripts/render-icons.mjs`. Sizes 16/32/48/96/128 present.
-2. **Screenshots.** The store requires at least one 1280×800 (or 640×400)
-   screenshot. Capture the popup + a themed ChatGPT and Claude page. (Optional
-   but recommended: a 440×280 small promo tile.)
-3. **Privacy policy URL** must be live (see above).
+2. ~~Screenshots.~~ **Done (promo set).** Four 1280×800 promo screenshots in
+   `docs/store/screenshots/` (dark, dracula, night-owl, catppuccin), rendered
+   from the real theme tokens via `node scripts/render-screenshots.mjs`. These
+   are marketing mockups; for the strongest listing you can also add real
+   captures of the live themed ChatGPT/Claude pages (⌘⇧4). Upload at least one.
+3. **Privacy policy URL** — use the public GitHub URL once on `main`:
+   `https://github.com/Zahin-Mohammad-plug/AI-Chat-Themes/blob/main/docs/store/PRIVACY_POLICY.md`
+   (fill in the contact email in that file first). Must be live before submit.
 4. **Developer account.** A one-time US$5 registration is required before you can
    publish. See "What only you can do" below.
 
