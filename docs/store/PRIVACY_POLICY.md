@@ -1,6 +1,6 @@
 # Privacy Policy — AI Chat Themes
 
-_Last updated: 2026-06-23_
+_Last updated: 2026-06-28_
 
 AI Chat Themes ("the extension") is a browser extension that applies visual
 themes to the ChatGPT (`chatgpt.com`) and Claude.ai (`claude.ai`) web apps. This
@@ -46,7 +46,8 @@ property of their respective owners.
 
 ## Contact
 
-Questions about this policy: me@zahin.org
+Questions about this policy can be raised via the project's issue tracker:
+<https://github.com/Zahin-Mohammad-plug/AI-Chat-Themes/issues>
 
 ## Changes
 

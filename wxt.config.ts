@@ -18,7 +18,8 @@ export default defineConfig({
     },
     browser_specific_settings: {
       gecko: {
-        id: 'ai-chat-themes@zahin.dev',
+        // Stable, neutral add-on id (not tied to any personal domain).
+        id: '{52996274-0ce1-45ec-9b10-958634ef1b2f}',
       },
     },
   },

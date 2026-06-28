@@ -1,14 +1,16 @@
 # AI Chat Themes: Custom Themes & Dark Mode for ChatGPT and Claude
 
 A Chrome (MV3) extension that applies resilient, **token-first** themes — dark,
-light, AMOLED, and a dozen recognizable palettes — to **ChatGPT** (`chatgpt.com`)
-and **Claude.ai** (`claude.ai`), with per-host control and no flash on load.
+light, AMOLED, a dozen recognizable palettes, and expressive gradient/textured
+looks — to **ChatGPT** (`chatgpt.com`) and **Claude.ai** (`claude.ai`), with
+per-host control and no flash on load.
 
 > Not affiliated with OpenAI or Anthropic. Appearance only — no changes to host
 > behavior, no collection of prompts, responses, or page content.
 
-This is the **M0 + M1 vertical slice**. See [docs/PRD.md](docs/PRD.md) for the
-full product vision and [docs/BUILD_PLAN.md](docs/BUILD_PLAN.md) for what's built.
+Implements **M1** (core engine + palette themes) and the **M2** expressive theme
+engine (schema v2: gradients, textures, glow). See [docs/PRD.md](docs/PRD.md) for
+the full product vision and [docs/BUILD_PLAN.md](docs/BUILD_PLAN.md) for status.
 
 ## Why it's different
 
@@ -22,10 +24,17 @@ remote adapter map, fingerprinting, self-healing telemetry — is M3.)
 
 ## Built-in themes
 
-Dark · Light · AMOLED · Dracula · One Dark Pro · Night Owl · Synthwave '84 ·
-Material Ocean · Catppuccin Mocha · GitHub Dark · Cobalt2 · Ayu Mirage
+**Palette** — Dark · Light · AMOLED · Midnight OLED · Paper · Dracula ·
+One Dark Pro · Night Owl · Synthwave '84 · Material Ocean · Catppuccin Mocha ·
+GitHub Dark · Cobalt2 · Ayu Mirage
 
-All built-ins are verified to meet **WCAG AA** body-text contrast.
+**Expressive (schema v2)** — Aurora (gradient) · Forest (texture) ·
+Cyberpunk (texture + neon glow)
+
+All built-ins are verified to meet **WCAG AA** body-text contrast. Expressive
+themes layer effects on a palette floor and degrade cleanly to it if a surface
+can't take the treatment. Promo renders live in
+[docs/store/screenshots/](docs/store/screenshots).
 
 ## Develop
 
@@ -62,7 +71,7 @@ entrypoints/
 src/
   adapters/            # adapter map (host bindings) — pure swappable data
   engine/              # apply / observer / health-check (all consuming logic)
-  themes/              # schema + validator + base-aware fallback + builtins
+  themes/              # schema (v2) + validator + builtins + bundled SVG textures
   storage/             # chrome.storage.local layer (per-host settings)
   util/                # color parsing, WCAG contrast, hex->HSL
 wxt.config.ts          # manifest + WXT config
@@ -73,4 +82,8 @@ wxt.config.ts          # manifest + WXT config
 Minimal permissions: `storage` plus host access to `chatgpt.com` and `claude.ai`
 only (no `<all_urls>`). No prompts, responses, page text, or personal data are
 ever read or transmitted. Telemetry (when added in M3) will be opt-in and limited
-to structural failure signals.
+to structural failure signals. Full text: [docs/store/PRIVACY_POLICY.md](docs/store/PRIVACY_POLICY.md).
+
+## License
+
+[MIT](LICENSE).
