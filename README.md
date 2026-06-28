@@ -8,9 +8,11 @@ per-host control and no flash on load.
 > Not affiliated with OpenAI or Anthropic. Appearance only — no changes to host
 > behavior, no collection of prompts, responses, or page content.
 
-Implements **M1** (core engine + palette themes) and the **M2** expressive theme
-engine (schema v2: gradients, textures, glow). See [docs/PRD.md](docs/PRD.md) for
-the full product vision and [docs/BUILD_PLAN.md](docs/BUILD_PLAN.md) for status.
+Implements **M1** (core engine + palette themes), **M2** (expressive theme engine
+— gradients, textures, glow — plus a live theme creator with import/export), and
+**M3** (resilience: remote adapter-map pipeline, fingerprinting, kill switch,
+opt-in telemetry). See [docs/PRD.md](docs/PRD.md) for the full product vision and
+[docs/BUILD_PLAN.md](docs/BUILD_PLAN.md) for status.
 
 ## Why it's different
 
@@ -35,6 +37,15 @@ All built-ins are verified to meet **WCAG AA** body-text contrast. Expressive
 themes layer effects on a palette floor and degrade cleanly to it if a surface
 can't take the treatment. Promo renders live in
 [docs/store/screenshots/](docs/store/screenshots).
+
+## Theme creator
+
+A live editor (open it from the popup) lets you build custom themes: per-token
+color pickers with **live preview** and **WCAG contrast warnings**,
+**generate-from-accent** (a full coherent palette from one seed color),
+typography and gradient controls, and save / duplicate / delete. Themes are
+portable — **export** to a `.json` file and **import** one back (validated and
+sanitized on the way in; no raw CSS execution path).
 
 ## Develop
 

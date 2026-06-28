@@ -89,6 +89,16 @@ async function init(): Promise<void> {
   // any tab (including unsupported ones).
   await wireTelemetryToggle(await getSettings());
 
+  // Open the theme editor (deep-linking the current host's active theme if any).
+  $('open-editor').addEventListener('click', async () => {
+    let url = chrome.runtime.getURL('editor.html');
+    if (host) {
+      const s = await getSettings();
+      url += `?theme=${encodeURIComponent(s.hosts[host].themeId)}`;
+    }
+    await chrome.tabs.create({ url });
+  });
+
   if (!host) {
     hostLabel.textContent = 'No supported site';
     $('unsupported').classList.remove('hidden');

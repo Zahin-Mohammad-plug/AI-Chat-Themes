@@ -85,6 +85,40 @@ export function toHslTriple(input: string): string | null {
   return `${round(h)} ${round(s * 100)}% ${round(l * 100)}%`;
 }
 
+/** HSL (h in degrees, s/l in 0..1) -> RGB (0-255). */
+export function hslToRgb({ h, s, l }: Hsl): Rgb {
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const hp = (((h % 360) + 360) % 360) / 60;
+  const x = c * (1 - Math.abs((hp % 2) - 1));
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  if (hp < 1) [r, g, b] = [c, x, 0];
+  else if (hp < 2) [r, g, b] = [x, c, 0];
+  else if (hp < 3) [r, g, b] = [0, c, x];
+  else if (hp < 4) [r, g, b] = [0, x, c];
+  else if (hp < 5) [r, g, b] = [x, 0, c];
+  else [r, g, b] = [c, 0, x];
+  const m = l - c / 2;
+  return {
+    r: Math.round((r + m) * 255),
+    g: Math.round((g + m) * 255),
+    b: Math.round((b + m) * 255),
+  };
+}
+
+/** RGB -> #rrggbb. */
+export function rgbToHex({ r, g, b }: Rgb): string {
+  const h = (n: number): string => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, '0');
+  return `#${h(r)}${h(g)}${h(b)}`;
+}
+
+/** Normalize any parseable color to #rrggbb (null if unparseable). */
+export function toHex(input: string): string | null {
+  const rgb = parseColor(input);
+  return rgb ? rgbToHex(rgb) : null;
+}
+
 /**
  * Convert any parseable color to `rgba(r,g,b,alpha)`. Used to build the
  * readability scrim layered over Tier-2 material textures (PRD 6.2). Returns

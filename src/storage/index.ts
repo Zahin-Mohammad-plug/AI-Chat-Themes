@@ -103,6 +103,17 @@ export async function saveCustomTheme(theme: Theme): Promise<Settings> {
   return settings;
 }
 
+/** Remove a custom theme. Any host pointing at it falls back to the default. */
+export async function deleteCustomTheme(id: string): Promise<Settings> {
+  const settings = await getSettings();
+  settings.customThemes = settings.customThemes.filter((t) => t.id !== id);
+  for (const host of Object.keys(settings.hosts) as HostId[]) {
+    if (settings.hosts[host].themeId === id) settings.hosts[host].themeId = DEFAULT_THEME_ID;
+  }
+  await saveSettings(settings);
+  return settings;
+}
+
 export async function setTelemetryEnabled(enabled: boolean): Promise<Settings> {
   const settings = await getSettings();
   settings.telemetryEnabled = enabled;

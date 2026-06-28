@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Theme editor — AI Chat Themes</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header class="hdr">
+      <div class="title">Theme editor</div>
+      <div class="row gap">
+        <select id="theme-select" aria-label="Load a theme to edit"></select>
+        <button id="new-btn" type="button">New</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <!-- Controls -->
+      <section class="panel" aria-label="Theme controls">
+        <p id="builtin-note" class="note hidden">
+          Editing a built-in — saving creates an editable copy.
+        </p>
+
+        <div class="field">
+          <label for="name-input">Name</label>
+          <input id="name-input" type="text" maxlength="60" placeholder="My theme" />
+        </div>
+
+        <div class="field">
+          <label for="base-select">Base</label>
+          <select id="base-select">
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+            <option value="amoled">AMOLED</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <span class="lbl">Applies to</span>
+          <label class="chk"><input type="checkbox" id="applies-chatgpt" /> ChatGPT</label>
+          <label class="chk"><input type="checkbox" id="applies-claude" /> Claude.ai</label>
+        </div>
+
+        <div class="field accent-gen">
+          <label for="seed-input">Generate from accent</label>
+          <div class="row gap">
+            <input id="seed-input" type="color" value="#7c8cff" />
+            <button id="generate-btn" type="button">Generate palette</button>
+          </div>
+          <p class="hint">Builds a full, contrast-safe palette from one color + the base.</p>
+        </div>
+
+        <fieldset class="group">
+          <legend>Colors</legend>
+          <div id="token-rows"></div>
+        </fieldset>
+
+        <fieldset class="group">
+          <legend>Typography</legend>
+          <div class="field">
+            <label for="font-family">Font family</label>
+            <input id="font-family" type="text" placeholder="(host default)" />
+          </div>
+          <div class="field">
+            <label for="code-font">Code font</label>
+            <input id="code-font" type="text" placeholder="(host default)" />
+          </div>
+          <div class="row gap">
+            <div class="field grow">
+              <label for="line-height">Line height</label>
+              <input id="line-height" type="number" min="1" max="2.2" step="0.05" />
+            </div>
+            <div class="field grow">
+              <label for="font-scale">Font scale</label>
+              <input id="font-scale" type="number" min="0.8" max="1.4" step="0.05" />
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="group">
+          <legend>Advanced</legend>
+          <div class="field">
+            <label for="app-gradient">App background gradient (optional)</label>
+            <input id="app-gradient" type="text" placeholder="linear-gradient(135deg,#…,#…)" />
+            <p class="hint">A CSS gradient painted behind the app. External url() is blocked.</p>
+          </div>
+        </fieldset>
+      </section>
+
+      <!-- Preview + status -->
+      <section class="side">
+        <div id="preview" class="preview">
+          <div class="pv-side">
+            <div class="pv-new">＋ New chat</div>
+            <div class="pv-item pv-active">Theme preview</div>
+            <div class="pv-item">Another chat</div>
+            <div class="pv-item">Weekend plan</div>
+          </div>
+          <div class="pv-main">
+            <div class="pv-h1">What can I help with?</div>
+            <div class="pv-row pv-user"><div class="pv-bubble pv-ub">How do I clamp a number?</div></div>
+            <div class="pv-row">
+              <div class="pv-bubble">
+                Here's a helper:
+                <pre class="pv-code"><span class="pv-k">const</span> clamp = (n,lo,hi) =&gt; Math.min(hi,Math.max(lo,n));</pre>
+                <a class="pv-link" href="#">Read more</a>
+              </div>
+            </div>
+            <div class="pv-composer"><span class="pv-ph">Message…</span><span class="pv-send"></span></div>
+          </div>
+        </div>
+
+        <div id="contrast" class="contrast" aria-live="polite"></div>
+
+        <div class="actions">
+          <button id="save-btn" type="button" class="primary">Save</button>
+          <button id="dup-btn" type="button">Duplicate</button>
+          <button id="delete-btn" type="button" class="danger">Delete</button>
+          <button id="export-btn" type="button">Export</button>
+          <button id="import-btn" type="button">Import</button>
+          <input id="import-input" type="file" accept="application/json,.json" hidden />
+        </div>
+        <p id="status" class="status" aria-live="polite"></p>
+      </section>
+    </main>
+
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

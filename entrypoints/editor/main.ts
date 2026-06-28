@@ -1,0 +1,392 @@
+// Theme editor page — PRD Section 12 / EPIC D2+D3+D4.
+// Live token editing with a faithful in-editor preview, contrast warnings,
+// generate-from-accent, save/duplicate/delete, and import/export. Vanilla TS,
+// same as the popup. Reuses the engine's token model — no host class is named.
+
+import { resolveTexture } from '@/src/themes/assets';
+import { BUILTIN_BLURBS, DEFAULT_THEME_ID, getBuiltin } from '@/src/themes/builtins';
+import { generateFromAccent } from '@/src/themes/generate';
+import { exportFilename, exportThemeJson, parseImportedTheme } from '@/src/themes/io';
+import { deriveTokens } from '@/src/themes/schema';
+import {
+  allThemes,
+  deleteCustomTheme,
+  getSettings,
+  saveCustomTheme,
+  type Settings,
+} from '@/src/storage';
+import {
+  SCHEMA_VERSION,
+  TOKEN_KEYS,
+  type HostId,
+  type Theme,
+  type ThemeBase,
+  type TokenKey,
+} from '@/src/themes/types';
+import { contrastRatio, toHex, WCAG_AA_BODY } from '@/src/util/color';
+
+const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
+const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
+const genId = (): string => {
+  try {
+    return (globalThis.crypto as Crypto).randomUUID();
+  } catch {
+    return 'theme-' + Math.abs(Date.now()).toString(36);
+  }
+};
+
+const TOKEN_LABELS: Record<TokenKey, string> = {
+  'bg.app': 'App background',
+  'bg.surface': 'Surface',
+  'bg.elevated': 'Elevated',
+  'text.primary': 'Text primary',
+  'text.secondary': 'Text secondary',
+  'text.tertiary': 'Text tertiary',
+  accent: 'Accent',
+  'accent.text': 'Accent text',
+  'border.hairline': 'Border',
+  'composer.bg': 'Composer',
+  'sidebar.bg': 'Sidebar',
+  'code.bg': 'Code background',
+};
+
+let settings: Settings;
+let draft: Theme;
+
+function blankTheme(base: ThemeBase): Theme {
+  return {
+    schemaVersion: SCHEMA_VERSION,
+    id: genId(),
+    name: 'My theme',
+    author: 'You',
+    appliesTo: ['chatgpt', 'claude'],
+    base,
+    builtin: false,
+    class: 'palette',
+    tokens: deriveTokens(base),
+  };
+}
+
+function loadDraft(theme: Theme): void {
+  draft = clone(theme);
+  syncForm();
+  render();
+}
+
+// --- Form <-> draft binding -----------------------------------------------
+
+function buildTokenRows(): void {
+  const host = $('token-rows');
+  host.innerHTML = '';
+  for (const key of TOKEN_KEYS) {
+    const row = document.createElement('div');
+    row.className = 'token-row';
+    row.innerHTML =
+      `<span class="token-label">${TOKEN_LABELS[key]}</span>` +
+      `<input type="color" data-color="${key}" aria-label="${TOKEN_LABELS[key]} swatch" />` +
+      `<input type="text" data-text="${key}" aria-label="${TOKEN_LABELS[key]} value" spellcheck="false" />`;
+    host.appendChild(row);
+    const swatch = row.querySelector<HTMLInputElement>(`[data-color="${key}"]`)!;
+    const text = row.querySelector<HTMLInputElement>(`[data-text="${key}"]`)!;
+    swatch.addEventListener('input', () => {
+      draft.tokens[key] = swatch.value;
+      text.value = swatch.value;
+      render();
+    });
+    text.addEventListener('input', () => {
+      draft.tokens[key] = text.value.trim();
+      const hex = toHex(text.value.trim());
+      if (hex) swatch.value = hex;
+      render();
+    });
+  }
+}
+
+function syncForm(): void {
+  $<HTMLInputElement>('name-input').value = draft.name;
+  $<HTMLSelectElement>('base-select').value = draft.base;
+  $<HTMLInputElement>('applies-chatgpt').checked = draft.appliesTo.includes('chatgpt');
+  $<HTMLInputElement>('applies-claude').checked = draft.appliesTo.includes('claude');
+  for (const key of TOKEN_KEYS) {
+    const swatch = document.querySelector<HTMLInputElement>(`[data-color="${key}"]`);
+    const text = document.querySelector<HTMLInputElement>(`[data-text="${key}"]`);
+    if (text) text.value = draft.tokens[key];
+    if (swatch) swatch.value = toHex(draft.tokens[key]) ?? '#000000';
+  }
+  $<HTMLInputElement>('font-family').value = draft.typography?.fontFamily ?? '';
+  $<HTMLInputElement>('code-font').value = draft.typography?.codeFontFamily ?? '';
+  $<HTMLInputElement>('line-height').value = String(draft.typography?.lineHeight ?? '');
+  $<HTMLInputElement>('font-scale').value = String(draft.typography?.fontScale ?? '');
+  $<HTMLInputElement>('app-gradient').value = draft.effects?.appGradient ?? '';
+  $('builtin-note').classList.toggle('hidden', !draft.builtin);
+  $<HTMLButtonElement>('delete-btn').disabled = !!draft.builtin;
+}
+
+function readTypography(): void {
+  const fontFamily = $<HTMLInputElement>('font-family').value.trim();
+  const codeFontFamily = $<HTMLInputElement>('code-font').value.trim();
+  const lineHeight = parseFloat($<HTMLInputElement>('line-height').value);
+  const fontScale = parseFloat($<HTMLInputElement>('font-scale').value);
+  const typo: NonNullable<Theme['typography']> = {};
+  if (fontFamily) typo.fontFamily = fontFamily;
+  if (codeFontFamily) typo.codeFontFamily = codeFontFamily;
+  if (lineHeight >= 1 && lineHeight <= 2.2) typo.lineHeight = lineHeight;
+  if (fontScale >= 0.8 && fontScale <= 1.4) typo.fontScale = fontScale;
+  draft.typography = Object.keys(typo).length ? typo : undefined;
+}
+
+function bindControls(): void {
+  $<HTMLInputElement>('name-input').addEventListener('input', (e) => {
+    draft.name = (e.target as HTMLInputElement).value;
+  });
+  $<HTMLSelectElement>('base-select').addEventListener('change', (e) => {
+    draft.base = (e.target as HTMLSelectElement).value as ThemeBase;
+    render();
+  });
+  const applies = (): void => {
+    const list: HostId[] = [];
+    if ($<HTMLInputElement>('applies-chatgpt').checked) list.push('chatgpt');
+    if ($<HTMLInputElement>('applies-claude').checked) list.push('claude');
+    draft.appliesTo = list.length ? list : ['chatgpt', 'claude'];
+  };
+  $('applies-chatgpt').addEventListener('change', applies);
+  $('applies-claude').addEventListener('change', applies);
+
+  for (const id of ['font-family', 'code-font', 'line-height', 'font-scale']) {
+    $(id).addEventListener('input', () => {
+      readTypography();
+      render();
+    });
+  }
+  $<HTMLInputElement>('app-gradient').addEventListener('input', (e) => {
+    const v = (e.target as HTMLInputElement).value.trim();
+    const safe = v && !/url\(|@import|javascript:/i.test(v);
+    draft.effects = safe ? { ...draft.effects, appGradient: v } : undefined;
+    render();
+  });
+
+  $('generate-btn').addEventListener('click', () => {
+    const seed = $<HTMLInputElement>('seed-input').value;
+    draft.tokens = generateFromAccent(seed, draft.base);
+    draft.tokens.accent = seed;
+    syncForm();
+    render();
+    status('Generated a palette from the accent.');
+  });
+
+  $('new-btn').addEventListener('click', () => {
+    loadDraft(blankTheme($<HTMLSelectElement>('base-select').value as ThemeBase));
+    status('New theme.');
+  });
+  $('save-btn').addEventListener('click', onSave);
+  $('dup-btn').addEventListener('click', onDuplicate);
+  $('delete-btn').addEventListener('click', onDelete);
+  $('export-btn').addEventListener('click', onExport);
+  $('import-btn').addEventListener('click', () => $('import-input').click());
+  $<HTMLInputElement>('import-input').addEventListener('change', onImport);
+
+  $<HTMLSelectElement>('theme-select').addEventListener('change', (e) => {
+    const id = (e.target as HTMLSelectElement).value;
+    const theme = findAny(id);
+    if (theme) loadDraft(theme);
+  });
+}
+
+// --- Actions ---------------------------------------------------------------
+
+function toSavable(): Theme {
+  const hasExpr = !!(draft.effects?.appGradient || draft.material);
+  return {
+    ...clone(draft),
+    schemaVersion: SCHEMA_VERSION,
+    builtin: false,
+    class: hasExpr ? 'expressive' : 'palette',
+  };
+}
+
+async function onSave(): Promise<void> {
+  const theme = toSavable();
+  // Editing a built-in (or a draft with no custom id yet) saves a fresh copy.
+  if (draft.builtin) theme.id = genId();
+  settings = await saveCustomTheme(theme);
+  draft = theme;
+  populateSelect(theme.id);
+  syncForm();
+  const c = contrast();
+  status(c.pass ? 'Saved ✓' : 'Saved ✓ — note: body contrast is below WCAG AA.');
+}
+
+async function onDuplicate(): Promise<void> {
+  const copy = toSavable();
+  copy.id = genId();
+  copy.name = `${draft.name} (copy)`;
+  settings = await saveCustomTheme(copy);
+  draft = copy;
+  populateSelect(copy.id);
+  syncForm();
+  status('Duplicated.');
+}
+
+async function onDelete(): Promise<void> {
+  if (draft.builtin) return;
+  settings = await deleteCustomTheme(draft.id);
+  populateSelect(DEFAULT_THEME_ID);
+  loadDraft(getBuiltin(DEFAULT_THEME_ID)!);
+  status('Deleted.');
+}
+
+function onExport(): void {
+  const theme = toSavable();
+  const blob = new Blob([exportThemeJson(theme)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = exportFilename(theme);
+  a.click();
+  URL.revokeObjectURL(url);
+  status('Exported theme JSON.');
+}
+
+function onImport(e: Event): void {
+  const input = e.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const { theme, result } = parseImportedTheme(String(reader.result));
+    if (!theme) {
+      status(`Import failed: ${result.errors.join('; ')}`);
+      return;
+    }
+    loadDraft(theme);
+    status(
+      result.warnings.length
+        ? `Imported with warnings: ${result.warnings.join('; ')}`
+        : 'Imported ✓ — review and Save to keep it.',
+    );
+  };
+  reader.onerror = () => status('Import failed: could not read file.');
+  reader.readAsText(file);
+  input.value = '';
+}
+
+// --- Live preview + contrast ----------------------------------------------
+
+function appBackground(t: Theme): string {
+  const layers: string[] = [];
+  if (t.material) {
+    const tex = resolveTexture(t.material.texture);
+    if (tex) {
+      const c = toHex(t.tokens['bg.app']) ?? '#000000';
+      // approximate the scrim with the base color at the configured opacity
+      layers.push(`linear-gradient(${c}cc, ${c}cc), ${tex}`);
+    }
+  }
+  if (t.effects?.appGradient) layers.push(t.effects.appGradient);
+  return layers.length
+    ? `${t.tokens['bg.app']}; background-image:${layers.join(',')}; background-size:cover; background-position:center`
+    : t.tokens['bg.app'];
+}
+
+function render(): void {
+  const t = draft;
+  const tok = t.tokens;
+  const set = (sel: string, prop: string, val: string): void => {
+    document.querySelectorAll<HTMLElement>(sel).forEach((el) => el.style.setProperty(prop, val));
+  };
+  const pv = $('preview');
+  pv.setAttribute('style', `background:${appBackground(t)}`);
+  pv.style.color = tok['text.primary'];
+
+  set('.pv-side', 'background', tok['sidebar.bg']);
+  set('.pv-side', 'border-color', tok['border.hairline']);
+  set('.pv-new', 'background', tok.accent);
+  set('.pv-new', 'color', tok['accent.text']);
+  set('.pv-item', 'color', tok['text.secondary']);
+  set('.pv-active', 'background', tok['bg.elevated']);
+  set('.pv-active', 'color', tok['text.primary']);
+
+  const glow = t.effects?.accentGlow ? `;text-shadow:${t.effects.accentGlow}` : '';
+  $('preview').querySelector<HTMLElement>('.pv-h1')!.setAttribute(
+    'style',
+    `color:${tok['text.primary']}${glow}`,
+  );
+  set('.pv-bubble', 'background', tok['bg.surface']);
+  set('.pv-bubble', 'color', tok['text.primary']);
+  set('.pv-bubble', 'border-color', tok['border.hairline']);
+  set('.pv-ub', 'background', tok['bg.elevated']);
+  set('.pv-code', 'background', tok['code.bg']);
+  set('.pv-link', 'color', tok.accent);
+  set('.pv-composer', 'background', tok['composer.bg']);
+  set('.pv-composer', 'border-color', tok['border.hairline']);
+  set('.pv-ph', 'color', tok['text.secondary']);
+  set('.pv-send', 'background', tok.accent);
+
+  if (t.typography?.fontFamily) set('.pv-main', 'font-family', t.typography.fontFamily);
+
+  renderContrast();
+}
+
+function contrast(): { pass: boolean; surface: number; app: number } {
+  const surface = contrastRatio(draft.tokens['text.primary'], draft.tokens['bg.surface']);
+  const app = contrastRatio(draft.tokens['text.primary'], draft.tokens['bg.app']);
+  return { pass: surface >= WCAG_AA_BODY && app >= WCAG_AA_BODY, surface, app };
+}
+
+function renderContrast(): void {
+  const c = contrast();
+  const badge = (label: string, ratio: number): string => {
+    const ok = ratio >= WCAG_AA_BODY;
+    return `<div class="cbadge ${ok ? 'ok' : 'bad'}">${label}: ${ratio.toFixed(2)}:1 ${ok ? '✓ AA' : '✗ below AA'}</div>`;
+  };
+  $('contrast').innerHTML =
+    badge('Text on surface', c.surface) + badge('Text on app', c.app);
+}
+
+// --- Theme list + boot -----------------------------------------------------
+
+function findAny(id: string): Theme | undefined {
+  return allThemes(settings).find((t) => t.id === id);
+}
+
+function populateSelect(selectedId: string): void {
+  const sel = $<HTMLSelectElement>('theme-select');
+  const themes = allThemes(settings);
+  sel.innerHTML = '';
+  const group = (label: string, list: Theme[]): void => {
+    if (!list.length) return;
+    const og = document.createElement('optgroup');
+    og.label = label;
+    for (const t of list) {
+      const o = document.createElement('option');
+      o.value = t.id;
+      o.textContent = t.name + (BUILTIN_BLURBS[t.id] ? '' : t.builtin ? '' : ' (custom)');
+      if (t.id === selectedId) o.selected = true;
+      og.appendChild(o);
+    }
+    sel.appendChild(og);
+  };
+  group('Built-in', themes.filter((t) => t.builtin));
+  group('Custom', themes.filter((t) => !t.builtin));
+}
+
+async function init(): Promise<void> {
+  settings = await getSettings();
+  buildTokenRows();
+  bindControls();
+
+  // Optional ?theme=<id> deep-link from the popup.
+  const wanted = new URLSearchParams(location.search).get('theme');
+  const start = (wanted && findAny(wanted)) || getBuiltin(DEFAULT_THEME_ID)!;
+  populateSelect(start.id);
+  loadDraft(start);
+}
+
+function status(msg: string): void {
+  $('status').textContent = msg;
+}
+
+init().catch((err) => {
+  console.error('[AI Chat Themes] editor init failed', err);
+  status('Editor failed to load.');
+});

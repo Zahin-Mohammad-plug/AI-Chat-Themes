@@ -224,3 +224,35 @@ responses, page content, URLs, or identity. Background double-gates the relay
 Gate: `pnpm compile` clean, `pnpm test` 48/48 (+11: remote 8, telemetry 3),
 `pnpm lint` clean, `pnpm build` ok. New deferred work: publish a signed map at a
 CDN + add the origin to host_permissions to turn on remote updates.
+
+## 2026-06-28 — M2 finish: theme creator + import/export + generate-from-accent
+
+Completed the M2 sharing on-ramp (PRD §12 / EPIC D2+D3+D4). New dedicated editor
+page (`entrypoints/editor/`, bundles to `editor.html`), opened from the popup
+(deep-links the active theme via `?theme=<id>`).
+
+**D2 live editor.** Per-token color pickers (swatch + text, so rgba border tokens
+work) with a faithful in-editor preview (mock chat styled live from the draft
+tokens, incl. gradient/texture/glow) and live WCAG contrast badges (text vs
+surface + app). Base, applies-to, typography, and an advanced app-gradient field.
+Save / duplicate / delete; editing a built-in saves an editable copy (built-ins
+stay code-defined and undeletable). Custom themes warn but save on low contrast.
+
+**D3 import/export (`src/themes/io.ts`).** Export → clean portable schema JSON
+(drops runtime flags) via a Blob download. Import → `parseImportedTheme` runs the
+same `normalizeTheme` validation + sanitization as everything else: malformed
+JSON rejected with a message; malicious payloads neutralized (advancedCss
+dropped, external-url effects/material stripped). Round-trip reproduces the theme.
+
+**D4 generate-from-accent (`src/themes/generate.ts`).** One seed color + base →
+a full, coherent token set. Surfaces are tinted toward the accent hue at low
+saturation; lightness comes from the base so contrast stays safe. Outputs
+`#rrggbb` only (both host token paths re-parse it). Verified contrast-safe across
+all bases × five seeds.
+
+Also: `deleteCustomTheme` in storage (re-points any host using it to the default);
+HSL→hex color helpers (`hslToRgb`/`rgbToHex`/`toHex`) in `src/util/color.ts`.
+
+Gate: compile clean, tests 57/57 (+9: generate 4, io 5), lint clean, build ok
+(`editor.html` 5.2 kB). M2 is now complete; next up is M4 (hosted store) — which
+the file-based import/export already covers ~80% of, per PRD §13.1.
