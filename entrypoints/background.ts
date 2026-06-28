@@ -1,25 +1,92 @@
-// Background service worker — PRD Section 8.
-// In this M0/M1 slice it owns first-run defaults. The remote adapter-map fetch,
-// integrity check, cache, and kill-switch wiring land in M3 (stubbed here so the
-// surface exists without violating MV3 — no remote code, ever).
+// Background service worker — PRD Section 8 / EPIC C1+C4.
+// Owns: first-run defaults; the remote adapter-map refresh (fetch → validate →
+// cache, stale-while-revalidate, bundled fallback); and relaying opt-in
+// structural telemetry. [INVARIANT] Only JSON data is fetched — never code.
 
 import { defineBackground } from 'wxt/sandbox';
-import { getSettings, saveSettings, DEFAULT_SETTINGS } from '@/src/storage';
+import { BUNDLED_ADAPTER_MAP } from '@/src/adapters/map';
+import { selectActiveMap, validateAdapterMap } from '@/src/adapters/remote';
+import {
+  MAP_REFRESH_MINUTES,
+  REMOTE_MAP_URL,
+  TELEMETRY_MSG,
+  TELEMETRY_URL,
+} from '@/src/config';
+import {
+  DEFAULT_SETTINGS,
+  getCachedAdapterMap,
+  getSettings,
+  saveSettings,
+  setCachedAdapterMap,
+} from '@/src/storage';
+
+const REFRESH_ALARM = 'act:map-refresh';
+
+/**
+ * Fetch the remote adapter map, validate it, and cache it only if it is a valid,
+ * strictly-newer version than what we already trust. Any failure (offline, 404,
+ * malformed, tampered, older) leaves the existing cache/bundled map untouched.
+ */
+async function refreshAdapterMap(): Promise<void> {
+  if (!REMOTE_MAP_URL) return; // remote updates disabled until configured
+  try {
+    const res = await fetch(REMOTE_MAP_URL, { cache: 'no-cache' });
+    if (!res.ok) return;
+    const json: unknown = await res.json();
+    const validated = validateAdapterMap(json);
+    if (!validated) return; // malformed/poisoned — never adopt
+
+    // Only adopt if strictly newer than both the bundled floor and any cache.
+    const current = selectActiveMap(await getCachedAdapterMap(), BUNDLED_ADAPTER_MAP);
+    if (validated.version > current.version) {
+      await setCachedAdapterMap(validated);
+    }
+  } catch {
+    // Network/parse failure: silently keep the cached/bundled map (PRD 16).
+  }
+}
+
+/** Relay an opt-in telemetry event to the collector (no-op unless configured). */
+async function relayTelemetry(event: unknown): Promise<void> {
+  if (!TELEMETRY_URL) return;
+  const { telemetryEnabled } = await getSettings();
+  if (!telemetryEnabled) return; // double-gate: never send unless opted in
+  try {
+    await fetch(TELEMETRY_URL, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(event),
+      keepalive: true,
+    });
+  } catch {
+    /* telemetry is best-effort; failures are ignored */
+  }
+}
 
 export default defineBackground(() => {
   chrome.runtime.onInstalled.addListener(async (details) => {
     if (details.reason === 'install') {
-      // Seed defaults so themes apply immediately on first run.
       await saveSettings(DEFAULT_SETTINGS);
     } else {
       // Reconcile/migrate existing settings against the current schema.
-      const settings = await getSettings();
-      await saveSettings(settings);
+      await saveSettings(await getSettings());
     }
+    // Schedule periodic refresh + do one now.
+    chrome.alarms.create(REFRESH_ALARM, { periodInMinutes: MAP_REFRESH_MINUTES });
+    void refreshAdapterMap();
   });
 
-  // M3 stub: remote adapter-map refresh would be scheduled here via
-  // chrome.alarms, fetching versioned JSON/CSS only, integrity-checked, with
-  // automatic fallback to the bundled snapshot. Intentionally not implemented
-  // in this slice.
+  chrome.runtime.onStartup?.addListener(() => void refreshAdapterMap());
+
+  chrome.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === REFRESH_ALARM) void refreshAdapterMap();
+  });
+
+  // Telemetry relay from content scripts (opt-in, structurally limited payload).
+  chrome.runtime.onMessage.addListener((msg) => {
+    if (msg && typeof msg === 'object' && msg.type === TELEMETRY_MSG) {
+      void relayTelemetry(msg.event);
+    }
+    return false;
+  });
 });

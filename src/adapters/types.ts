@@ -38,6 +38,19 @@ export type ColorModeSpec =
 // which reads `data-mode` on itself, not from <html>) — without propagating the
 // mode there, message text renders in the wrong scheme (black on dark).
 
+/**
+ * Durable signals that identify a host "shape" (PRD 5.5). An adapter matches the
+ * live page when all its declared signals are present. Chosen from durable hints
+ * (known CSS custom properties, DOM landmarks) rather than brittle hashed
+ * classes. An adapter with no signals always matches (single-shape hosts).
+ */
+export interface FingerprintSignals {
+  /** CSS custom properties expected to be defined on :root. */
+  cssVars?: string[];
+  /** DOM selectors expected to resolve. */
+  selectors?: string[];
+}
+
 export interface HostAdapter {
   host: HostId;
   /** Human label for the host shape (fingerprint), PRD 5.5. */
@@ -45,6 +58,8 @@ export interface HostAdapter {
   tokenFormat: TokenFormat;
   /** How this host expresses its native light/dark mode (PRD 16: precedence). */
   colorMode?: ColorModeSpec;
+  /** Durable signals for fingerprint-based selection (PRD 5.5). */
+  signals?: FingerprintSignals;
   /**
    * Host CSS custom property name -> theme token key. Tier-1 targeting (most
    * durable). Overriding these cascades automatically through the host.
@@ -58,5 +73,13 @@ export interface AdapterMap {
   version: number;
   /** Per-host disable flag (remote kill switch, PRD 5.4). */
   killSwitch?: Partial<Record<HostId, boolean>>;
+  /** Per-host anchor ids to skip — surface-level kill switch (PRD 5.4). */
+  disabledAnchors?: Partial<Record<HostId, string[]>>;
+  /** The default adapter per host. */
   hosts: Record<HostId, HostAdapter>;
+  /**
+   * Optional alternate host shapes chosen by fingerprint at runtime (PRD 5.5).
+   * Lets one map support several host versions during a rollout/A-B test.
+   */
+  variants?: Partial<Record<HostId, HostAdapter[]>>;
 }

@@ -185,3 +185,42 @@ Tier-2 best-effort behavior, not whole-app material fidelity.
 Gate: `pnpm compile` clean, `pnpm test` 37/37, `pnpm lint` clean, `pnpm build`
 ok (content bundle 40.6 kB incl. both textures). Reload the unpacked extension to
 pick up the new build.
+
+## 2026-06-28 — M3 resilience hardening (remote map, fingerprinting, kill switch, telemetry)
+
+Built the resilience spine (PRD §5 / EPIC C). Designed to run fully offline and
+ship safe: both network endpoints are NULL by default (`src/config.ts`), so the
+extension fetches nothing out of the box (clean for Web Store review) while the
+full client pipeline is implemented and unit-tested. Flip a constant to activate.
+
+**C1 — remote adapter map (`src/adapters/remote.ts`, `entrypoints/background.ts`).**
+Background worker fetches a versioned JSON map, runs strict structural validation
+(`validateAdapterMap` — every host/tokenFormat/token-key/selector checked), and
+caches it only if it is valid AND strictly newer than what we already trust.
+`selectActiveMap` picks newest-valid, with the bundled snapshot as the floor.
+Any failure (offline, 404, malformed, tampered, older) silently keeps the
+cached/bundled map — a poisoned map can never brick the host page. Refresh on
+install/startup + every 12h via `chrome.alarms` (added the `alarms` permission;
+hosts unchanged).
+
+**C2 — host fingerprinting.** Adapters carry durable `signals` (known CSS vars /
+DOM landmarks); `adapterForHost` picks the matching shape, trying `variants`
+first then the default, so one map can support several host versions during a
+rollout. Bundled adapters fingerprint on `--main-surface-primary` (ChatGPT) and
+`--bg-000` (Claude).
+
+**C3 — self-healing.** Health check already degrades (unresolved anchors just
+aren't applied — native, never half-themed); now misses optionally feed
+telemetry. Surface-level kill switch added: `activeAnchors` drops
+`disabledAnchors[host]` ids; per-host `killSwitch` still disables theming wholesale.
+
+**C4 — opt-in telemetry (`src/engine/telemetry.ts`).** Off by default
+(`telemetryEnabled` in storage; toggle in the popup). `buildTelemetryEvent`
+constructs events from a frozen field allowlist (host id, fingerprint, missing
+anchor ids, ext + map version, ts) — structurally impossible to include prompts,
+responses, page content, URLs, or identity. Background double-gates the relay
+(opt-in check) and no-ops unless `TELEMETRY_URL` is set.
+
+Gate: `pnpm compile` clean, `pnpm test` 48/48 (+11: remote 8, telemetry 3),
+`pnpm lint` clean, `pnpm build` ok. New deferred work: publish a signed map at a
+CDN + add the origin to host_permissions to turn on remote updates.

@@ -10,6 +10,8 @@ const chatgpt: HostAdapter = {
   host: 'chatgpt',
   fingerprint: 'chatgpt-2024-tokens',
   tokenFormat: 'color',
+  // Durable signal: ChatGPT defines this design-token var on :root.
+  signals: { cssVars: ['--main-surface-primary'] },
   // ChatGPT toggles a `dark` class on <html>; its Tailwind `dark:` utilities
   // (modals, menus, settings) follow it, so we must match it to the theme base.
   colorMode: { type: 'class', name: 'dark' },
@@ -72,6 +74,8 @@ const claude: HostAdapter = {
   host: 'claude',
   fingerprint: 'claude-2024-hsl',
   tokenFormat: 'hsl-triple',
+  // Durable signal: Claude defines this base background token on :root.
+  signals: { cssVars: ['--bg-000'] },
   // Claude expresses mode via a `data-mode` attribute on <html>. Its newer
   // design-system layer (`.cds-root`, which wraps message content) reads
   // `data-mode` on the element itself, so we propagate the mode there too —

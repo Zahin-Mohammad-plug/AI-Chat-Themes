@@ -1,9 +1,19 @@
 // Content script — runs at document_start on both hosts. PRD Sections 8, 9, 11.1.
-// Responsibilities: pre-paint cloak (sync), read cached active theme (async),
-// apply tokens + anchors, reveal, run health check, observe dynamic surfaces.
+// Responsibilities: pre-paint cloak (sync), read cached active theme + adapter
+// map (async), pick the host shape by fingerprint, apply tokens + anchors,
+// reveal, run the health check, self-heal/degrade on misses, optionally emit
+// opt-in structural telemetry, and observe dynamic surfaces.
 
 import { defineContentScript } from 'wxt/sandbox';
 import { BUNDLED_ADAPTER_MAP, hostFromUrl } from '@/src/adapters/map';
+import {
+  activeAnchors,
+  adapterForHost,
+  domSignalEnv,
+  selectActiveMap,
+} from '@/src/adapters/remote';
+import type { HostAdapter } from '@/src/adapters/types';
+import { TELEMETRY_MSG } from '@/src/config';
 import {
   applyThemeToDocument,
   captureColorMode,
@@ -15,8 +25,10 @@ import {
 } from '@/src/engine/apply';
 import { runHealthCheck } from '@/src/engine/health';
 import { startObserver } from '@/src/engine/observer';
+import { buildTelemetryEvent } from '@/src/engine/telemetry';
 import {
   activeThemeForHost,
+  getCachedAdapterMap,
   getSettings,
   onSettingsChanged,
   type Settings,
@@ -68,8 +80,13 @@ export default defineContentScript({
     const host = hostFromUrl(location.href);
     if (!host) return;
 
-    const adapter = BUNDLED_ADAPTER_MAP.hosts[host];
-    const killed = BUNDLED_ADAPTER_MAP.killSwitch?.[host] === true;
+    // The bundled adapter governs the synchronous pre-paint phase; the active
+    // adapter (possibly a remote/cached shape, fingerprint-selected) is resolved
+    // once async storage reads complete.
+    let adapter: HostAdapter = BUNDLED_ADAPTER_MAP.hosts[host];
+    let killed = BUNDLED_ADAPTER_MAP.killSwitch?.[host] === true;
+    let mapVersion = BUNDLED_ADAPTER_MAP.version;
+    const extVersion = chrome.runtime.getManifest().version;
 
     // Capture the host's native color mode before we touch it, so turning theming
     // off restores the user's original light/dark setting.
@@ -102,10 +119,22 @@ export default defineContentScript({
       if (theme) {
         applyThemeToDocument(theme, adapter);
         writeCloakSnapshot(host, theme);
-        // Health check: record (console-only in this slice) unresolved anchors.
+        // Health check (PRD 5.4): unresolved anchors mean the host changed shape.
+        // Missing anchors simply weren't applied (degrade to native, never half-
+        // themed); report them only if the user opted into telemetry.
         const report = runHealthCheck(adapter);
         if (report.missing.length) {
           console.debug('[AI Chat Themes] unresolved anchors', report.missing);
+          if (settings.telemetryEnabled) {
+            const event = buildTelemetryEvent(report, { extVersion, mapVersion, now: Date.now() });
+            if (event) {
+              try {
+                chrome.runtime.sendMessage({ type: TELEMETRY_MSG, event });
+              } catch {
+                /* worker may be asleep; telemetry is best-effort */
+              }
+            }
+          }
         }
       } else {
         removeTheme();
@@ -115,9 +144,17 @@ export default defineContentScript({
       reveal();
     };
 
-    // 3) Async init from storage, then keep in sync with popup/editor changes.
-    getSettings()
-      .then((settings) => {
+    // 3) Async init: resolve the active adapter map (cached-or-bundled), pick the
+    // host shape by fingerprint, then apply and keep in sync with popup changes.
+    Promise.all([getSettings(), getCachedAdapterMap()])
+      .then(([settings, cachedMap]) => {
+        const map = selectActiveMap(cachedMap);
+        mapVersion = map.version;
+        killed = map.killSwitch?.[host] === true;
+        const picked = adapterForHost(map, host, domSignalEnv());
+        // Apply the surface-level kill switch (PRD 5.4).
+        adapter = { ...picked, anchors: activeAnchors(map, host, picked) };
+
         apply(settings);
         startWhenReady(() => {
           startObserver(() => {

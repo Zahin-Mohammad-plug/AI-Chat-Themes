@@ -139,6 +139,18 @@ body {
   line-height: 1.5;
 }
 
+.privacy {
+  padding: 12px 16px;
+  border-top: 1px solid var(--pop-border);
+}
+
+.privacy .hint {
+  margin: 6px 0 0;
+  color: var(--pop-text-dim);
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+
 .ftr {
   padding: 8px 16px 12px;
   color: var(--pop-text-dim);

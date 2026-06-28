@@ -2,6 +2,7 @@
 // chrome.storage.local holds installed custom themes, per-host active theme,
 // and per-host on/off. Remote is never a hard dependency for applying a theme.
 
+import { ADAPTER_MAP_CACHE_KEY } from '@/src/config';
 import { BUILTIN_THEMES, DEFAULT_THEME_ID, getBuiltin } from '@/src/themes/builtins';
 import { normalizeTheme } from '@/src/themes/schema';
 import type { HostId, Theme } from '@/src/themes/types';
@@ -16,6 +17,8 @@ export interface Settings {
   hosts: Record<HostId, HostSettings>;
   /** User-created/imported themes (validated before persistence). */
   customThemes: Theme[];
+  /** Opt-in anonymous structural telemetry (PRD 5.4). Off by default. */
+  telemetryEnabled: boolean;
 }
 
 const STORAGE_KEY = 'act:settings';
@@ -28,6 +31,7 @@ export const DEFAULT_SETTINGS: Settings = {
     claude: { enabled: true, themeId: DEFAULT_THEME_ID },
   },
   customThemes: [],
+  telemetryEnabled: false,
 };
 
 function mergeSettings(raw: unknown): Settings {
@@ -47,6 +51,7 @@ function mergeSettings(raw: unknown): Settings {
       claude: { ...DEFAULT_SETTINGS.hosts.claude, ...hosts.claude },
     },
     customThemes,
+    telemetryEnabled: typeof r.telemetryEnabled === 'boolean' ? r.telemetryEnabled : false,
   };
 }
 
@@ -96,6 +101,24 @@ export async function saveCustomTheme(theme: Theme): Promise<Settings> {
   else settings.customThemes.push(theme);
   await saveSettings(settings);
   return settings;
+}
+
+export async function setTelemetryEnabled(enabled: boolean): Promise<Settings> {
+  const settings = await getSettings();
+  settings.telemetryEnabled = enabled;
+  await saveSettings(settings);
+  return settings;
+}
+
+/** Read the cached remote adapter map (raw, unvalidated). Validate before use. */
+export async function getCachedAdapterMap(): Promise<unknown> {
+  const got = await chrome.storage.local.get(ADAPTER_MAP_CACHE_KEY);
+  return got[ADAPTER_MAP_CACHE_KEY];
+}
+
+/** Persist a fetched+validated remote adapter map. */
+export async function setCachedAdapterMap(map: unknown): Promise<void> {
+  await chrome.storage.local.set({ [ADAPTER_MAP_CACHE_KEY]: map });
 }
 
 export function onSettingsChanged(cb: (settings: Settings) => void): () => void {
