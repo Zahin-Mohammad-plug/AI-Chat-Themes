@@ -131,3 +131,57 @@ rebuilt (tests green). Reload the unpacked extension to pick up the new build.
 Also observed e2e: storage-driven theme selection persists across reload (a Light
 selection re-applied from chrome.storage at document_start), and the engine
 renders non-default themes correctly on the live host (Dracula confirmed).
+
+## 2026-06-28 — Schema v2 (expressive themes) + five showcase themes
+
+Adopted PRD v1.1 (schema v2). Old PRD archived to `docs/PRD-v1-archive.md`;
+`docs/PRD.md` is now the v1.1 spec (product name preserved). Schema v2 is the M2
+milestone, **not** Phase 2 — the hosted store (M4) stays deferred as recommended.
+
+**Schema (additive, v1 themes still load).** Bumped `SCHEMA_VERSION` to 2 and
+added three optional blocks to `Theme`/`PartialTheme` (`src/themes/types.ts`):
+`effects` (Tier-1 `appGradient` + `accentGlow`), `material` (Tier-2 textured
+background + mandatory readability scrim), and `motion` (schema-only,
+forward-compatible — no built-in ships motion yet). A theme with none of them is
+a plain palette theme and normalizes exactly as before. `normalizeTheme` now
+sanitizes the new blocks and defaults `class:'palette'`, `fidelityTier:1`.
+
+**Security (PRD 6.2 / 13.3).** Imported expressive CSS is guarded: external
+`url()`, `@import`, `expression()`, and `javascript:` are stripped from
+gradients/sizes; `material.texture` only accepts a bundled asset id (no raw
+url/scheme); the scrim is clamped to a ≥0.5 readability floor; motion without a
+`reducedMotionFallback` is dropped with a warning.
+
+**Engine (`src/engine/apply.ts`).** `buildThemeCss` now appends an expressive
+layer: a scrimmed material texture and/or an effects gradient painted on the app
+shell (`html, body, main`, `background-attachment: fixed`), plus an accent
+text-shadow glow on links. It targets the universal roots both adapters already
+theme, so behavior is **identical on ChatGPT and Claude** with no host-specific
+selector — and message surfaces stay opaque, so body text never sits on raw
+texture (the ambiance shows on the landing screen, gutters, sidebar, composer
+frame). Always layered on the palette floor: an unknown texture or absent layer
+degrades cleanly to palette (PRD 6.1).
+
+**Textures (`src/themes/assets.ts`).** `forest` and `cyber` are procedural inline
+SVGs encoded as `data:` URIs — license-clean, byte-tiny, MV3-safe (no remote
+fetch, no web-accessible resources, no asset FOUC), each based on its theme's
+`bg.app` so the scrim composites to an on-palette, AA-readable surface.
+
+**Themes (`src/themes/builtins.ts`).** Added the five hero themes from the
+reference mock: Midnight OLED (palette, amoled), Paper (palette, warm light),
+Aurora (Tier-1 gradient), Forest (Tier-2 forest texture), Cyberpunk (Tier-2 city
+texture + neon glow). All declare `appliesTo: ['chatgpt','claude']` and pass the
+WCAG AA built-in contrast gate.
+
+**Popup.** Gallery cards now render a wide preview bar showing the gradient or
+texture for expressive themes (`entrypoints/popup/`).
+
+**Honest Tier-2 caveat.** Because host message surfaces are opaque (and Claude's
+hsl-triple token path can't carry alpha), the forest/cyberpunk textures frame the
+app rather than sitting behind every message — most visible on the empty landing
+screen (which is exactly what the reference mock shows). This is the documented
+Tier-2 best-effort behavior, not whole-app material fidelity.
+
+Gate: `pnpm compile` clean, `pnpm test` 37/37, `pnpm lint` clean, `pnpm build`
+ok (content bundle 40.6 kB incl. both textures). Reload the unpacked extension to
+pick up the new build.

@@ -2,7 +2,7 @@
 
 **Name:** AI Chat Themes: Custom Themes & Dark Mode for ChatGPT and Claude
 **Type:** Chrome Extension (Manifest V3), Chromium-first, Firefox-portable
-**Status:** Draft v1.1 (schema v2: expressive/material/motion themes), ready for agent decomposition
+**Status:** Draft v1, ready for agent decomposition
 **Owner:** Zahin
 **Audience:** Coding agents + reviewing engineer
 
@@ -130,15 +130,12 @@ Themes are **data**, decoupled from selectors. A theme never names a host class.
 
 ```jsonc
 {
-  "schemaVersion": 2,                       // v2 adds style/effects/material/motion. v1 themes still load (treatment defaults to flat).
+  "schemaVersion": 1,
   "id": "uuid",
   "name": "Midnight Clay",
   "author": "ahmed",
   "appliesTo": ["chatgpt", "claude"],     // or one
   "base": "dark",                          // dark | light | amoled, drives sane fallbacks
-  "class": "palette",                      // palette | expressive  (see 6.1)
-  "style": "flat",                         // flat | neomorphic | brutalist | material | glass (see 6.1)
-  "fidelityTier": 1,                        // 1 robust everywhere, 2 best-effort on stable surfaces (see 6.1)
   "tokens": {
     "bg.app": "#0e0e10",
     "bg.surface": "#16161a",
@@ -149,28 +146,6 @@ Themes are **data**, decoupled from selectors. A theme never names a host class.
     "border.hairline": "rgba(255,255,255,0.08)",
     "composer.bg": "#16161a",
     "sidebar.bg": "#0e0e10"
-  },
-  "effects": {                              // optional, drives expressive looks. Omit for a flat palette theme.
-    "gradients": {                          // named gradients usable as bg.* values, e.g. for gold/diamond
-      "accent": "linear-gradient(135deg,#FBE6A2,#C99B30 45%,#8A6A1A)"
-    },
-    "elevation": {                          // shadow ramp. Neomorphism uses dual (light+dark); brutalism uses hard offset.
-      "model": "dual",                      // none | soft | dual | hardOffset
-      "surface": "8px 8px 16px #0a0a0c, -8px -8px 16px #1c1c22"
-    },
-    "border": { "weight": "0.5px", "radius": "0px" },  // brutalism: thick + 0 radius; neomorphism: 0 border + large radius
-    "glow": { "accent": "0 0 12px #FF7EDB" }            // lighting/synthwave-style accent glow
-  },
-  "material": {                             // optional. Textured themes (marble, etc). See 6.2 for hard rules.
-    "texture": "asset://marble-red.avif",   // bundled asset id OR https URL from an allowlisted CDN (see 13.3)
-    "appliesToSurfaces": ["bg.app", "sidebar.bg"],  // NEVER behind body text without a passing scrim
-    "scrimOpacity": 0.86,                   // mandatory readability layer over any text-bearing surface
-    "blendMode": "normal"
-  },
-  "motion": {                               // optional. Lighting/shimmer/sparkle. See 6.2.
-    "preset": "ambientGlow",                // ambientGlow | shimmer | sparkle | none
-    "intensity": "subtle",
-    "reducedMotionFallback": "static-glow"  // REQUIRED whenever motion is set: a static look for prefers-reduced-motion
   },
   "typography": {
     "fontFamily": "Hanken Grotesk, sans-serif",
@@ -191,49 +166,9 @@ Themes are **data**, decoupled from selectors. A theme never names a host class.
 }
 ```
 
-**[INVARIANT]** The schema bump from v1 to v2 is **additive**: `effects`, `material`, and `motion` are optional, and a theme with none of them is a plain palette theme. The engine must load v1 themes unchanged, defaulting `class:"palette"`, `style:"flat"`, `fidelityTier:1`.
-
 **[INVARIANT]** Every token has a **base-aware fallback**. If a theme omits a token, the engine derives a safe value from `base` so partial themes never produce unreadable contrast (e.g. dark text on dark surface).
 
 **[INVARIANT]** Contrast safety: the engine validates `text.primary` against `bg.surface` and `bg.app` for a minimum contrast ratio and warns in the creator. It must not be possible to save a built-in theme that fails WCAG AA on body text. User custom themes may warn but still save.
-
-### 6.1 Theme classes and fidelity tiers [INVARIANT]
-Themes fall into two classes:
-- **Palette themes** (`class: "palette"`): color, typography, and code palette only. Robust on both hosts because they ride the token-override layer (5.2 tier 1). The recognizable VS Code-style set lives here.
-- **Expressive themes** (`class: "expressive"`): add surface treatment via `effects`, `material`, or `motion` (gradients, shadows, textures, borders, glow, animation). More visually ambitious, less robust on a third-party DOM, so they declare a fidelity tier:
-  - **Tier 1 (robust):** achievable with CSS on stable surfaces, survives host changes well. Color, gradient backgrounds, accent glow, border weight and radius, hard offset shadows.
-  - **Tier 2 (best-effort):** requires per-component treatment (textures, matched dual shadows) that only the most stable surfaces (app background, sidebar, composer, message bubbles) can reliably take. Applied where possible, skipped elsewhere.
-
-**[INVARIANT]** Every expressive theme carries a **palette layer** as its floor. If a surface cannot take the treatment (host changed, component not found, performance budget exceeded), the engine renders that surface from the palette layer cleanly. An expressive theme must never produce a broken half-state. This is the existing graceful-degradation invariant (5.4) extended to treatment.
-
-### 6.2 Expressive-theme guardrails [INVARIANT]
-These are hard rules. They exist because the most common way a fancy theme ruins a chat app is by making text unreadable or the page janky.
-- **Readability scrim:** any texture or busy gradient behind text MUST sit under a scrim layer that preserves AA contrast. Textures default to non-text surfaces (`bg.app`, `sidebar.bg`) only. Veining, sparkle, or marble must never sit directly behind message body text without a contrast-passing scrim. The contrast validator (Section 6) runs against the composited result, not the raw token.
-- **Motion:** any animation (lighting, gold shimmer, diamond sparkle) may animate only GPU-friendly properties (`transform`, `opacity`, `filter`), never layout or paint-heavy properties. It must be subtle, bounded, paused when the tab or surface is offscreen, and it MUST define a static `reducedMotionFallback` that activates under `prefers-reduced-motion`. No motion theme ships without that fallback.
-- **Asset budget:** bundled textures must be optimized (AVIF/WebP, dimension and byte capped). Remote textures (store themes) are treated as remote assets under the same controls as advanced CSS in 13.3: allowlisted CDN origins only, install consent, moderation. An external `url()` to an arbitrary origin is the same exfiltration vector flagged there and is blocked.
-- **Performance parity:** expressive themes must pass the same long-chat performance bar as everything else (11.2). A theme that janks scroll or typing is rejected, however good it looks in a screenshot.
-
-### 6.3 Built-in theme registry [REF]
-Ship in two waves.
-
-**Wave 1, palette set (M1, recognizable):** Dracula, Nord (or Tokyo Night), Catppuccin Mocha, a light option (Solarized Light or GitHub Light), Synthwave '84, plus one original house theme.
-
-**Wave 2, expressive set (M2+, needs schema v2):**
-
-| Theme | Class | Tier | Needs |
-|---|---|---|---|
-| Black & White Minimal | expressive | 1 | tokens + border/radius only |
-| Neo-Brutalism | expressive | 1 | thick borders, 0 radius, hard offset shadow, bold type |
-| Primary (Red / Yellow / Blue) | expressive | 1 | bold primary palette, optional blocky borders |
-| Shiny Gold | expressive | 1 | gold gradient + glow, optional shimmer (motion) |
-| Lighting / Glow | expressive | 1 | accent glow + `ambientGlow` motion (+ static fallback) |
-| Diamond | expressive | 2 | prismatic gradient + `sparkle` motion on accent surfaces only |
-| Neomorphism | expressive | 2 | matched bg + dual shadow on stable components only |
-| Marble Red | expressive | 2 | red marble texture on `bg.app`/`sidebar` + scrim |
-| Marble White | expressive | 2 | white/grey marble texture + scrim |
-| Marble Electric Blue | expressive | 2 | blue marble texture + scrim |
-
-**[REF]** Honest feasibility note: neomorphism and the marble themes are the hardest on a third-party DOM because they need per-component treatment you do not fully control. Expect them to treat a handful of stable surfaces well and degrade the rest to palette. Set that expectation in the creator and in the store listing rather than promising whole-app material fidelity.
 
 ---
 
@@ -319,11 +254,10 @@ The hardest UX detail in this category. Required behavior:
 - No perceptible input latency in the composer.
 - Observer work is debounced and scoped; long conversations (thousands of nodes) must not degrade scroll or typing.
 - Memory footprint bounded; no observer leaks across SPA navigations.
-- Expressive themes (textures, gradients, motion) must hold this same bar: GPU-friendly animation only, offscreen pause, byte-capped textures (6.2). A theme that janks long-chat scroll is rejected.
 
 ### 11.3 Accessibility [INVARIANT]
 - Contrast validation per Section 6.
-- Respect `prefers-reduced-motion`: any motion theme (lighting, shimmer, sparkle) must swap to its static `reducedMotionFallback`, not merely slow down. Per 6.2 a motion theme without that fallback does not ship.
+- Respect `prefers-reduced-motion` for any extension-added transitions.
 - Do not remove focus outlines or trap keyboard focus.
 - Editor controls keyboard-navigable and labeled.
 
@@ -414,8 +348,8 @@ Options: free + donations (most competitors), freemium (premium theme packs / ad
 ## 18. Milestones / phasing [ADAPT]
 
 - **M0 Spike:** Prove token-override theming on both hosts; map each host's exposed CSS variables; confirm FOUC cloak + failsafe; confirm remote JSON/CSS fetch + cache + fallback. Output: feasibility confirmation + initial adapter map.
-- **M1 Core engine:** Schema (v2-ready), engine (apply/observe/health-check), bundled **palette** themes (Wave 1 set, Section 6.3) per host, popup, per-host toggle, FOUC handling. Ships as a working themer.
-- **M2 Creator + expressive themes:** Live editor, contrast validation, generate-from-accent, import/export. Implement the `effects`/`material`/`motion` engine paths and ship the Wave 2 **expressive** set (Section 6.3), Tier 1 first (Black & White, Neo-Brutalism, Primary, Shiny Gold, Lighting), then Tier 2 (Diamond, Neomorphism, Marble red/white/electric blue) behind the readability and performance guardrails in 6.2.
+- **M1 Core engine:** Schema, engine (apply/observe/health-check), bundled themes (light/dark/amold per host), popup, per-host toggle, FOUC handling. Ships as a working themer.
+- **M2 Creator:** Live editor, contrast validation, generate-from-accent, import/export.
 - **M3 Resilience hardening:** Remote adapter map pipeline, fingerprinting, kill switch, opt-in telemetry, self-healing.
 - **M4 (optional) Store:** Backend, publishing, moderation, ratings, sandboxed advanced CSS.
 

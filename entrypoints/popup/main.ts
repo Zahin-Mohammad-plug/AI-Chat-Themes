@@ -3,6 +3,7 @@
 // Apply/switch is instant: writes to storage; the content script re-applies live.
 
 import { hostFromUrl } from '@/src/adapters/map';
+import { resolveTexture } from '@/src/themes/assets';
 import { BUILTIN_BLURBS } from '@/src/themes/builtins';
 import {
   allThemes,
@@ -25,12 +26,26 @@ async function getActiveHost(): Promise<HostId | null> {
   return hostFromUrl(tab?.url);
 }
 
+/** A wide preview bar showing the expressive ambiance (gradient/texture), if any. */
+function previewBar(theme: Theme): string {
+  if (theme.effects?.appGradient) {
+    return `<div class="preview" style="background:${theme.effects.appGradient}"></div>`;
+  }
+  if (theme.material) {
+    const tex = resolveTexture(theme.material.texture);
+    if (tex) {
+      return `<div class="preview" style="background-image:${tex};background-size:cover;background-position:center"></div>`;
+    }
+  }
+  return '';
+}
+
 function swatch(theme: Theme): string {
   const t = theme.tokens;
   const cells = [t['bg.app'], t['bg.surface'], t['bg.elevated'], t.accent]
     .map((c) => `<span style="background:${c}"></span>`)
     .join('');
-  return `<div class="swatch">${cells}</div>`;
+  return previewBar(theme) + `<div class="swatch">${cells}</div>`;
 }
 
 function renderGallery(host: HostId, settings: Settings): void {

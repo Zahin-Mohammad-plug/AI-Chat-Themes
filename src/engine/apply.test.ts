@@ -127,3 +127,37 @@ describe('buildThemeCss (Claude, hsl-triple format)', () => {
     expect(m![1]).toMatch(/^\d+(\.\d+)?\s+\d+(\.\d+)?%\s+\d+(\.\d+)?%$/);
   });
 });
+
+describe('buildThemeCss — schema-v2 expressive layers', () => {
+  const aurora = getBuiltin('builtin-aurora') as Theme;
+  const forest = getBuiltin('builtin-forest') as Theme;
+  const cyber = getBuiltin('builtin-cyberpunk') as Theme;
+  const paper = getBuiltin('builtin-paper') as Theme;
+
+  it('paints a gradient on the app shell for Aurora (both hosts)', () => {
+    for (const host of ['chatgpt', 'claude'] as const) {
+      const css = buildThemeCss(aurora, BUNDLED_ADAPTER_MAP.hosts[host]);
+      expect(css).toContain('html, body, main {');
+      expect(css).toContain('background-image: linear-gradient(135deg');
+      expect(css).toContain('background-attachment: fixed !important;');
+    }
+  });
+
+  it('layers a readability scrim over the texture for Forest', () => {
+    const css = buildThemeCss(forest, BUNDLED_ADAPTER_MAP.hosts.chatgpt);
+    // scrim = solid wash of bg.app (#0c1a12 -> rgb 12,26,18) over the data URI
+    expect(css).toContain('background-image: linear-gradient(rgba(12, 26, 18,');
+    expect(css).toContain('data:image/svg+xml');
+  });
+
+  it('emits an accent glow for Cyberpunk', () => {
+    const css = buildThemeCss(cyber, BUNDLED_ADAPTER_MAP.hosts.claude);
+    expect(css).toContain('text-shadow: 0 0 8px rgba(255,43,214,0.7) !important;');
+  });
+
+  it('emits no expressive layers for a plain palette theme', () => {
+    const css = buildThemeCss(paper, BUNDLED_ADAPTER_MAP.hosts.chatgpt);
+    expect(css).not.toContain('background-attachment: fixed');
+    expect(css).not.toContain('text-shadow');
+  });
+});

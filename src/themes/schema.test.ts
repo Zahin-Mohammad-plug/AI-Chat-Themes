@@ -65,4 +65,85 @@ describe('built-in themes', () => {
       expect(() => assertBuiltinContrast(theme)).not.toThrow();
     }
   });
+
+  it('includes the five schema-v2 showcase themes', () => {
+    const ids = BUILTIN_THEMES.map((t) => t.id);
+    for (const id of [
+      'builtin-midnight-oled',
+      'builtin-aurora',
+      'builtin-forest',
+      'builtin-cyberpunk',
+      'builtin-paper',
+    ]) {
+      expect(ids).toContain(id);
+    }
+  });
+
+  it('apply to both hosts', () => {
+    for (const theme of BUILTIN_THEMES) {
+      expect(theme.appliesTo).toEqual(['chatgpt', 'claude']);
+    }
+  });
+});
+
+describe('schema v2 (expressive blocks)', () => {
+  it('marks a theme expressive and preserves a safe gradient', () => {
+    const { theme } = normalizeTheme({
+      name: 'Grad',
+      base: 'light',
+      effects: { appGradient: 'linear-gradient(135deg,#fff,#eee)' },
+    });
+    expect(theme?.class).toBe('expressive');
+    expect(theme?.effects?.appGradient).toContain('linear-gradient');
+  });
+
+  it('strips effects that try to fetch an external resource', () => {
+    const { theme } = normalizeTheme({
+      name: 'Evil',
+      base: 'dark',
+      effects: { appGradient: "url('https://evil.example/leak')" },
+    });
+    expect(theme?.effects).toBeUndefined();
+    expect(theme?.class).toBe('palette');
+  });
+
+  it('accepts a bundled material texture and clamps the scrim to a readable floor', () => {
+    const { theme } = normalizeTheme({
+      name: 'Tex',
+      base: 'dark',
+      material: { texture: 'forest', scrimOpacity: 0.1 },
+    });
+    expect(theme?.material?.texture).toBe('forest');
+    expect(theme?.material?.scrimOpacity).toBeGreaterThanOrEqual(0.5);
+  });
+
+  it('rejects a material texture that is a raw url (not an asset id)', () => {
+    const { theme } = normalizeTheme({
+      name: 'Tex2',
+      base: 'dark',
+      material: { texture: "url('http://x')", scrimOpacity: 0.8 },
+    });
+    expect(theme?.material).toBeUndefined();
+  });
+
+  it('drops motion that lacks a reduced-motion fallback', () => {
+    const { theme, result } = normalizeTheme({
+      name: 'Mo',
+      base: 'dark',
+      motion: { preset: 'shimmer' },
+    });
+    expect(theme?.motion).toBeUndefined();
+    expect(result.warnings.some((w) => w.includes('reducedMotionFallback'))).toBe(true);
+  });
+
+  it('still loads a v1 (palette-only) theme as palette', () => {
+    const { theme } = normalizeTheme({
+      schemaVersion: 1,
+      name: 'Old',
+      base: 'dark',
+      tokens: { 'bg.app': '#111111' },
+    });
+    expect(theme?.class).toBe('palette');
+    expect(theme?.fidelityTier).toBe(1);
+  });
 });

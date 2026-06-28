@@ -4,7 +4,17 @@
 // extension is not affiliated with those projects and ships only color values.
 
 import { deriveTokens } from './schema';
-import { SCHEMA_VERSION, type Theme, type ThemeBase, type ThemeTokens } from './types';
+import {
+  SCHEMA_VERSION,
+  type FidelityTier,
+  type Theme,
+  type ThemeBase,
+  type ThemeClass,
+  type ThemeEffects,
+  type ThemeMaterial,
+  type ThemeStyle,
+  type ThemeTokens,
+} from './types';
 
 interface BuiltinSpec {
   id: string;
@@ -13,6 +23,12 @@ interface BuiltinSpec {
   /** Short blurb shown in the popup. */
   blurb: string;
   tokens: Partial<ThemeTokens>;
+  /** Schema v2 expressive treatment (optional — omit for a flat palette theme). */
+  class?: ThemeClass;
+  style?: ThemeStyle;
+  fidelityTier?: FidelityTier;
+  effects?: ThemeEffects;
+  material?: ThemeMaterial;
 }
 
 const SPECS: BuiltinSpec[] = [
@@ -75,6 +91,130 @@ const SPECS: BuiltinSpec[] = [
       'composer.bg': '#070707',
       'sidebar.bg': '#000000',
       'code.bg': '#0a0a0a',
+    },
+  },
+
+  // --- Showcase set (schema v2 — the five hero themes) ---
+  {
+    id: 'builtin-midnight-oled',
+    name: 'Midnight OLED',
+    base: 'amoled',
+    blurb: 'True dark. Easy on the eyes. Pure focus.',
+    class: 'palette',
+    style: 'flat',
+    tokens: {
+      'bg.app': '#000000',
+      'bg.surface': '#050507',
+      'bg.elevated': '#0e0e12',
+      'text.primary': '#e8e8ea',
+      'text.secondary': '#8b8b93',
+      'text.tertiary': '#56565e',
+      accent: '#6ea8fe',
+      'accent.text': '#00010a',
+      'border.hairline': 'rgba(255,255,255,0.07)',
+      'composer.bg': '#050507',
+      'sidebar.bg': '#000000',
+      'code.bg': '#08080a',
+    },
+  },
+  {
+    id: 'builtin-aurora',
+    name: 'Aurora',
+    base: 'light',
+    blurb: 'Soft gradients. Calm, uplifting, and modern.',
+    class: 'expressive',
+    style: 'gradient',
+    fidelityTier: 1,
+    tokens: {
+      'bg.app': '#eef0fb',
+      'bg.surface': '#ffffff',
+      'bg.elevated': '#f7f8ff',
+      'text.primary': '#2a2740',
+      'text.secondary': '#5b5676',
+      'text.tertiary': '#908bb0',
+      accent: '#8b5cf6',
+      'accent.text': '#ffffff',
+      'border.hairline': 'rgba(80,70,140,0.14)',
+      'composer.bg': '#ffffff',
+      'sidebar.bg': '#f2f1fb',
+      'code.bg': '#f3f2fc',
+    },
+    effects: {
+      appGradient:
+        'linear-gradient(135deg, #f9d7ec 0%, #e7d9fb 38%, #d6e4fb 70%, #d9f1f0 100%)',
+    },
+  },
+  {
+    id: 'builtin-forest',
+    name: 'Forest',
+    base: 'dark',
+    blurb: 'Deep greens. Nature-inspired serenity.',
+    class: 'expressive',
+    style: 'textured',
+    fidelityTier: 2,
+    tokens: {
+      'bg.app': '#0c1a12',
+      'bg.surface': '#11241a',
+      'bg.elevated': '#1a3326',
+      'text.primary': '#e6f0e8',
+      'text.secondary': '#9db5a6',
+      'text.tertiary': '#6a8475',
+      accent: '#7fc89a',
+      'accent.text': '#07140d',
+      'border.hairline': 'rgba(160,210,180,0.12)',
+      'composer.bg': '#11241a',
+      'sidebar.bg': '#0a160f',
+      'code.bg': '#0e2016',
+    },
+    material: { texture: 'forest', appliesToSurfaces: ['bg.app'], scrimOpacity: 0.82 },
+  },
+  {
+    id: 'builtin-cyberpunk',
+    name: 'Cyberpunk',
+    base: 'dark',
+    blurb: 'Neon glow. High contrast. Futuristic energy.',
+    class: 'expressive',
+    style: 'textured',
+    fidelityTier: 2,
+    tokens: {
+      'bg.app': '#0a0612',
+      'bg.surface': '#140b22',
+      'bg.elevated': '#1e1133',
+      'text.primary': '#f2e9ff',
+      'text.secondary': '#b9a8d6',
+      'text.tertiary': '#7d6aa0',
+      accent: '#ff2bd6',
+      'accent.text': '#0a0612',
+      'border.hairline': 'rgba(255,43,214,0.22)',
+      'composer.bg': '#140b22',
+      'sidebar.bg': '#0a0612',
+      'code.bg': '#120a20',
+    },
+    effects: { accentGlow: '0 0 8px rgba(255,43,214,0.7)' },
+    // Lighter scrim than other textures: the city skyline is the point, and the
+    // near-white text sits over a dark skyline so it stays well above AA.
+    material: { texture: 'cyber', appliesToSurfaces: ['bg.app'], scrimOpacity: 0.55 },
+  },
+  {
+    id: 'builtin-paper',
+    name: 'Paper',
+    base: 'light',
+    blurb: 'Clean, warm, and distraction-free.',
+    class: 'palette',
+    style: 'flat',
+    tokens: {
+      'bg.app': '#f4ecdc',
+      'bg.surface': '#fbf5e9',
+      'bg.elevated': '#fffaf0',
+      'text.primary': '#3a3326',
+      'text.secondary': '#6b6150',
+      'text.tertiary': '#97907f',
+      accent: '#b5742f',
+      'accent.text': '#fffaf0',
+      'border.hairline': 'rgba(60,50,30,0.14)',
+      'composer.bg': '#fbf5e9',
+      'sidebar.bg': '#efe6d2',
+      'code.bg': '#efe6d2',
     },
   },
 
@@ -269,7 +409,12 @@ export const BUILTIN_THEMES: Theme[] = SPECS.map((spec) => ({
   appliesTo: ['chatgpt', 'claude'],
   base: spec.base,
   builtin: true,
+  class: spec.class ?? 'palette',
+  style: spec.style ?? 'flat',
+  fidelityTier: spec.fidelityTier ?? 1,
   tokens: deriveTokens(spec.base, spec.tokens),
+  effects: spec.effects,
+  material: spec.material,
 }));
 
 export const BUILTIN_BLURBS: Record<string, string> = Object.fromEntries(

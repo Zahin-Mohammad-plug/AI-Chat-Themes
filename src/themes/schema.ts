@@ -6,10 +6,15 @@ import { contrastRatio, WCAG_AA_BODY } from '@/src/util/color';
 import {
   SCHEMA_VERSION,
   TOKEN_KEYS,
+  type FidelityTier,
   type HostId,
   type PartialTheme,
   type Theme,
   type ThemeBase,
+  type ThemeClass,
+  type ThemeEffects,
+  type ThemeMaterial,
+  type ThemeMotion,
   type ThemeTokens,
 } from './types';
 
@@ -127,6 +132,14 @@ export function normalizeTheme(input: unknown): {
 
   const tokens = deriveTokens(base, p.tokens);
 
+  const effects = sanitizeEffects(p.effects);
+  const material = sanitizeMaterial(p.material);
+  const motion = sanitizeMotion(p.motion, warnings);
+  // Schema v2 class: expressive if any treatment is present; else palette.
+  const themeClass: ThemeClass =
+    p.class === 'expressive' || effects || material || motion ? 'expressive' : 'palette';
+  const fidelityTier: FidelityTier = p.fidelityTier === 2 ? 2 : 1;
+
   const theme: Theme = {
     schemaVersion: SCHEMA_VERSION,
     id: typeof p.id === 'string' && p.id ? p.id : cryptoRandomId(),
@@ -135,10 +148,15 @@ export function normalizeTheme(input: unknown): {
     appliesTo,
     base,
     builtin: false,
+    class: themeClass,
+    fidelityTier,
     tokens,
     typography: sanitizeTypography(p.typography),
     code: p.code && typeof p.code === 'object' ? p.code : undefined,
     layout: sanitizeLayout(p.layout),
+    effects,
+    material,
+    motion,
     advancedCss: null,
   };
 
@@ -184,6 +202,62 @@ function sanitizeLayout(l: PartialTheme['layout']) {
   if (typeof l.chatMaxWidth === 'string') out.chatMaxWidth = l.chatMaxWidth;
   if (typeof l.wideMode === 'boolean') out.wideMode = l.wideMode;
   return Object.keys(out).length ? out : undefined;
+}
+
+// [INVARIANT 6.2 / 13.3] A CSS value coming from an untrusted theme must not be
+// able to fetch an external resource or inject behavior. Block external url(),
+// @import, expression() and javascript: regardless of casing/spacing.
+function isUnsafeCss(v: string): boolean {
+  const s = v.toLowerCase().replace(/\s+/g, '');
+  return s.includes('url(') || s.includes('@import') || s.includes('expression(') || s.includes('javascript:');
+}
+
+function sanitizeEffects(e: PartialTheme['effects']): ThemeEffects | undefined {
+  if (!e || typeof e !== 'object') return undefined;
+  const out: ThemeEffects = {};
+  if (typeof e.appGradient === 'string' && e.appGradient.trim() && !isUnsafeCss(e.appGradient))
+    out.appGradient = e.appGradient.trim();
+  if (typeof e.accentGlow === 'string' && e.accentGlow.trim() && !isUnsafeCss(e.accentGlow))
+    out.accentGlow = e.accentGlow.trim();
+  return Object.keys(out).length ? out : undefined;
+}
+
+function sanitizeMaterial(m: PartialTheme['material']): ThemeMaterial | undefined {
+  if (!m || typeof m !== 'object') return undefined;
+  // Only a bundled asset id is accepted here (plain token, no url/scheme).
+  // Allowlisted https CDN textures are a later store-phase concern (PRD 13.3).
+  if (typeof m.texture !== 'string' || !/^[a-z0-9_-]+$/i.test(m.texture)) return undefined;
+  const scrim =
+    typeof m.scrimOpacity === 'number' && m.scrimOpacity >= 0 && m.scrimOpacity <= 1
+      ? Math.max(0.5, m.scrimOpacity) // never let the scrim drop below a readable floor
+      : 0.82;
+  const out: ThemeMaterial = { texture: m.texture, scrimOpacity: scrim };
+  if (Array.isArray(m.appliesToSurfaces)) {
+    const surfaces = m.appliesToSurfaces.filter((k) => TOKEN_KEYS.includes(k));
+    if (surfaces.length) out.appliesToSurfaces = surfaces;
+  }
+  if (typeof m.size === 'string' && !isUnsafeCss(m.size)) out.size = m.size;
+  return out;
+}
+
+function sanitizeMotion(
+  mo: PartialTheme['motion'],
+  warnings: string[],
+): ThemeMotion | undefined {
+  if (!mo || typeof mo !== 'object') return undefined;
+  const presets = ['ambientGlow', 'shimmer', 'sparkle', 'none'] as const;
+  if (!presets.includes(mo.preset as (typeof presets)[number])) return undefined;
+  // [INVARIANT 11.3] Motion without a reduced-motion fallback does not ship.
+  if (typeof mo.reducedMotionFallback !== 'string' || !mo.reducedMotionFallback.trim()) {
+    warnings.push('motion dropped: missing required reducedMotionFallback');
+    return undefined;
+  }
+  const out: ThemeMotion = {
+    preset: mo.preset as ThemeMotion['preset'],
+    reducedMotionFallback: mo.reducedMotionFallback.trim(),
+  };
+  if (mo.intensity === 'subtle' || mo.intensity === 'medium') out.intensity = mo.intensity;
+  return out;
 }
 
 function cryptoRandomId(): string {

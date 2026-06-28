@@ -85,6 +85,18 @@ export function toHslTriple(input: string): string | null {
   return `${round(h)} ${round(s * 100)}% ${round(l * 100)}%`;
 }
 
+/**
+ * Convert any parseable color to `rgba(r,g,b,alpha)`. Used to build the
+ * readability scrim layered over Tier-2 material textures (PRD 6.2). Returns
+ * null if the input can't be parsed (caller skips the scrim — never throws).
+ */
+export function toRgba(input: string, alpha: number): string | null {
+  const rgb = parseColor(input);
+  if (!rgb) return null;
+  const a = Math.min(1, Math.max(0, alpha));
+  return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${a})`;
+}
+
 function round(n: number): number {
   return Math.round(n * 10) / 10;
 }

@@ -5,8 +5,14 @@
 // the injected <style> and fully restores the native host.
 
 import type { HostAdapter } from '@/src/adapters/types';
+import { resolveTexture } from '@/src/themes/assets';
 import type { Theme, ThemeBase, ThemeTokens, TokenKey } from '@/src/themes/types';
-import { toHslTriple } from '@/src/util/color';
+import { toHslTriple, toRgba } from '@/src/util/color';
+
+// Expressive layers (effects/material) paint the app shell behind everything.
+// We target the universal roots both adapters already theme, so behavior is
+// identical on both hosts and no host-specific selector is hardcoded here.
+const SHELL_SELECTOR = 'html, body, main';
 
 export const STYLE_ID = 'act-theme-style';
 export const CLOAK_ID = 'act-cloak-style';
@@ -69,7 +75,58 @@ export function buildThemeCss(theme: Theme, adapter: HostAdapter): string {
     }
   }
 
+  // (4) Expressive layers (schema v2). Always layered on top of the palette
+  // floor above — if a layer is absent or its asset is unknown, the surface
+  // simply renders from the palette (PRD 6.1 graceful degradation).
+  blocks.push(...buildExpressiveCss(theme));
+
   return blocks.join('\n\n');
+}
+
+/**
+ * Build the expressive (effects/material) CSS for a theme. Returns an empty
+ * array for a plain palette theme. Never throws: an unparseable token or
+ * unknown texture just drops that layer.
+ */
+function buildExpressiveCss(theme: Theme): string[] {
+  const out: string[] = [];
+  const t = theme.tokens;
+
+  // App-shell background image: a scrimmed material texture (Tier 2) and/or an
+  // effects gradient (Tier 1), stacked in one `background-image`.
+  const layers: string[] = [];
+  if (theme.material) {
+    const tex = resolveTexture(theme.material.texture);
+    if (tex) {
+      // [INVARIANT 6.2] Mandatory readability scrim: a solid wash of the base
+      // bg color over the texture so text over the app shell stays AA-readable.
+      const scrim = toRgba(t['bg.app'], theme.material.scrimOpacity ?? 0.82);
+      if (scrim) layers.push(`linear-gradient(${scrim}, ${scrim}), ${tex}`);
+      else layers.push(tex);
+    }
+  }
+  if (theme.effects?.appGradient) layers.push(theme.effects.appGradient);
+
+  if (layers.length) {
+    const size = theme.material?.size ?? 'cover';
+    out.push(
+      `${SHELL_SELECTOR} {\n` +
+        `  background-image: ${layers.join(', ')} !important;\n` +
+        `  background-size: ${size} !important;\n` +
+        `  background-position: center !important;\n` +
+        `  background-repeat: no-repeat !important;\n` +
+        `  background-attachment: fixed !important;\n` +
+        `}`,
+    );
+  }
+
+  // Accent glow (Tier 1): a subtle text-shadow on links/accents. GPU-friendly
+  // (shadow only), bounded, and conservatively scoped to avoid host breakage.
+  if (theme.effects?.accentGlow) {
+    out.push(`a, a * {\n  text-shadow: ${theme.effects.accentGlow} !important;\n}`);
+  }
+
+  return out;
 }
 
 function upsertStyle(id: string, css: string, doc: Document): void {

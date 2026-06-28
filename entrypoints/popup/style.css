@@ -99,6 +99,14 @@ body {
   outline-offset: 1px;
 }
 
+.preview {
+  height: 40px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--pop-border);
+  margin-bottom: 6px;
+}
+
 .swatch {
   height: 36px;
   border-radius: 6px;
