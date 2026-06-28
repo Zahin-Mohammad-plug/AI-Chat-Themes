@@ -57,6 +57,12 @@ must resolve before the listing will pass review.
 - Host permission `*://claude.ai/*`: Inject theme CSS into the Claude.ai web app.
 - Remote code: **None.** All logic ships in the package; no remotely hosted code.
 
+**Promo tiles (Graphic assets tab)**
+- Small promo tile (440×280): `docs/store/promo/small-promo-440x280.jpg`
+- Marquee promo tile (1400×560): `docs/store/promo/marquee-promo-1400x560.jpg`
+- Both are JPEG (no alpha), per store requirements. Regenerate with
+  `node scripts/render-promo.mjs`.
+
 **Data usage disclosures (Privacy practices tab)**
 - Does the extension collect user data? **No.**
 - Check none of the data-type boxes.
