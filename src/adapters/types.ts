@@ -23,11 +23,23 @@ export interface AnchorRule {
   style: Partial<Record<string, TokenKey>>;
 }
 
+/**
+ * How a host signals its own light/dark mode. The engine must keep this in sync
+ * with the theme's base, otherwise the host's framework styles (e.g. Tailwind
+ * `dark:` utilities in modals/menus) fight a mismatched theme. Hosts differ:
+ * ChatGPT toggles a class, Claude toggles an attribute.
+ */
+export type ColorModeSpec =
+  | { type: 'class'; name: string }
+  | { type: 'attribute'; name: string; darkValue: string; lightValue: string };
+
 export interface HostAdapter {
   host: HostId;
   /** Human label for the host shape (fingerprint), PRD 5.5. */
   fingerprint: string;
   tokenFormat: TokenFormat;
+  /** How this host expresses its native light/dark mode (PRD 16: precedence). */
+  colorMode?: ColorModeSpec;
   /**
    * Host CSS custom property name -> theme token key. Tier-1 targeting (most
    * durable). Overriding these cascades automatically through the host.

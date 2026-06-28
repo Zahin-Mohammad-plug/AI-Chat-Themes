@@ -4,7 +4,15 @@
 
 import { defineContentScript } from 'wxt/sandbox';
 import { BUNDLED_ADAPTER_MAP, hostFromUrl } from '@/src/adapters/map';
-import { applyThemeToDocument, injectCloak, removeCloak, removeTheme } from '@/src/engine/apply';
+import {
+  applyThemeToDocument,
+  captureColorMode,
+  injectCloak,
+  removeCloak,
+  removeTheme,
+  restoreColorMode,
+  type ColorModeSnapshot,
+} from '@/src/engine/apply';
 import { runHealthCheck } from '@/src/engine/health';
 import { startObserver } from '@/src/engine/observer';
 import {
@@ -63,6 +71,10 @@ export default defineContentScript({
     const adapter = BUNDLED_ADAPTER_MAP.hosts[host];
     const killed = BUNDLED_ADAPTER_MAP.killSwitch?.[host] === true;
 
+    // Capture the host's native color mode before we touch it, so turning theming
+    // off restores the user's original light/dark setting.
+    const originalMode: ColorModeSnapshot = captureColorMode(adapter);
+
     // 1) Pre-paint cloak from the synchronous snapshot (no white flash).
     if (!killed) {
       const snap = readCloakSnapshot(host);
@@ -81,6 +93,7 @@ export default defineContentScript({
     const apply = (settings: Settings): void => {
       if (killed) {
         removeTheme();
+        restoreColorMode(adapter, originalMode);
         reveal();
         return;
       }
@@ -96,6 +109,7 @@ export default defineContentScript({
         }
       } else {
         removeTheme();
+        restoreColorMode(adapter, originalMode);
         clearCloakSnapshot(host);
       }
       reveal();

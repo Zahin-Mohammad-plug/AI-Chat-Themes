@@ -46,7 +46,7 @@ property of their respective owners.
 
 ## Contact
 
-Questions about this policy: `[your-contact-email]`
+Questions about this policy: me@zahin.org
 
 ## Changes
 

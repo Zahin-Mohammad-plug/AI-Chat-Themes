@@ -1,5 +1,26 @@
 # Devlog
 
+## 2026-06-28 — Fix: light themes broke host menus/modals (v0.1.1)
+
+**Bug (reported on ChatGPT settings/menus in light mode):** the engine overrode
+CSS design tokens but never reconciled the host's own light/dark mode. ChatGPT
+keeps `class="dark"` on `<html>`, so its Tailwind `dark:` utilities (modals,
+menus, settings dialog) kept rendering dark and clashed with a light theme —
+unreadable. CSS-variable overrides can't reach utility classes.
+
+**Fix:** the engine now syncs the host's native color mode to the theme base
+(PRD 16 precedence). Hosts differ, so the mechanism is data in the adapter map:
+- ChatGPT → toggle `class="dark"` on `<html>`.
+- Claude  → set `data-mode="dark|light"` on `<html>` (verified live; Claude does
+  not use a `dark` class).
+`applyColorMode()` sets the class/attr + `color-scheme` from `theme.base`;
+`captureColorMode()`/`restoreColorMode()` save and restore the user's original
+mode on toggle-off. Verified live: ChatGPT settings dialog renders correctly
+light. Added unit tests for both mechanisms (24 tests total). Bumped to v0.1.1
+for store resubmission.
+
+
+
 Reverse-chronological log of feature-level changes, for agentic continuity.
 Append a dated entry whenever you complete something meaningful. Keep entries
 short: what changed, why, and anything the next agent should know.

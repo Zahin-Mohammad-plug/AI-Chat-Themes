@@ -5,7 +5,7 @@
 // the injected <style> and fully restores the native host.
 
 import type { HostAdapter } from '@/src/adapters/types';
-import type { Theme, ThemeTokens, TokenKey } from '@/src/themes/types';
+import type { Theme, ThemeBase, ThemeTokens, TokenKey } from '@/src/themes/types';
 import { toHslTriple } from '@/src/util/color';
 
 export const STYLE_ID = 'act-theme-style';
@@ -83,6 +83,58 @@ function upsertStyle(id: string, css: string, doc: Document): void {
   el.textContent = css;
 }
 
+export interface ColorModeSnapshot {
+  hadClass?: boolean;
+  attrValue?: string | null;
+  colorScheme: string;
+}
+
+/** Capture the host's native color-mode state so we can restore it on toggle-off. */
+export function captureColorMode(adapter: HostAdapter, doc: Document = document): ColorModeSnapshot {
+  const de = doc.documentElement;
+  const snap: ColorModeSnapshot = { colorScheme: de.style.colorScheme };
+  const m = adapter.colorMode;
+  if (m?.type === 'class') snap.hadClass = de.classList.contains(m.name);
+  else if (m?.type === 'attribute') snap.attrValue = de.getAttribute(m.name);
+  return snap;
+}
+
+/**
+ * Sync the host's own light/dark mode to the theme base (PRD 16: extension theme
+ * wins on themed surfaces). Without this, the host's framework styles (Tailwind
+ * `dark:` utilities) fight a mismatched theme — e.g. a light theme leaves
+ * ChatGPT's menus/settings dark and unreadable.
+ */
+export function applyColorMode(
+  base: ThemeBase,
+  adapter: HostAdapter,
+  doc: Document = document,
+): void {
+  const m = adapter.colorMode;
+  if (!m) return;
+  const de = doc.documentElement;
+  const wantDark = base !== 'light';
+  if (m.type === 'class') de.classList.toggle(m.name, wantDark);
+  else de.setAttribute(m.name, wantDark ? m.darkValue : m.lightValue);
+  de.style.colorScheme = wantDark ? 'dark' : 'light';
+}
+
+/** Restore the host's native color-mode (used when theming is turned off). */
+export function restoreColorMode(
+  adapter: HostAdapter,
+  snap: ColorModeSnapshot,
+  doc: Document = document,
+): void {
+  const m = adapter.colorMode;
+  const de = doc.documentElement;
+  if (m?.type === 'class' && snap.hadClass !== undefined) de.classList.toggle(m.name, snap.hadClass);
+  else if (m?.type === 'attribute' && snap.attrValue !== undefined) {
+    if (snap.attrValue === null) de.removeAttribute(m.name);
+    else de.setAttribute(m.name, snap.attrValue);
+  }
+  de.style.colorScheme = snap.colorScheme;
+}
+
 /**
  * Apply a theme to the document. Returns the anchor ids that were emitted,
  * for the post-apply health check (PRD 5.4).
@@ -94,6 +146,7 @@ export function applyThemeToDocument(
 ): string[] {
   const css = buildThemeCss(theme, adapter);
   upsertStyle(STYLE_ID, css, doc);
+  applyColorMode(theme.base, adapter, doc);
   doc.documentElement.setAttribute('data-act-theme', theme.id);
   return adapter.anchors.map((a) => a.id);
 }

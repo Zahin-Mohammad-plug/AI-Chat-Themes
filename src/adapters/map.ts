@@ -10,6 +10,9 @@ const chatgpt: HostAdapter = {
   host: 'chatgpt',
   fingerprint: 'chatgpt-2024-tokens',
   tokenFormat: 'color',
+  // ChatGPT toggles a `dark` class on <html>; its Tailwind `dark:` utilities
+  // (modals, menus, settings) follow it, so we must match it to the theme base.
+  colorMode: { type: 'class', name: 'dark' },
   // Tier 1: ChatGPT exposes plain-color CSS custom properties.
   tokenVars: {
     '--bg-primary': 'bg.app',
@@ -69,6 +72,8 @@ const claude: HostAdapter = {
   host: 'claude',
   fingerprint: 'claude-2024-hsl',
   tokenFormat: 'hsl-triple',
+  // Claude expresses mode via a `data-mode` attribute on <html>.
+  colorMode: { type: 'attribute', name: 'data-mode', darkValue: 'dark', lightValue: 'light' },
   // Tier 1: Claude consumes design tokens as `hsl(var(--token))`, so the engine
   // emits bare "H S% L%" triples for these (see TokenFormat).
   tokenVars: {
