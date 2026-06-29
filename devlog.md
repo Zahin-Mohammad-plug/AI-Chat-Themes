@@ -294,3 +294,21 @@ Gate: compile clean, tests 123/123, lint clean, build ok. Remaining for true
 prod sign-off: a live pass on the actual hosts (load unpacked, log in, walk
 code/settings/artifact surfaces) — the one thing only an authenticated browser
 can confirm.
+
+## 2026-06-28 — Live verification on real hosts + health-check timing fix
+
+Drove the loaded extension on real chatgpt.com and claude.ai via Claude-in-Chrome.
+Confirmed live: per-host themes (Cyberpunk on ChatGPT incl. the city texture +
+glowing moon; Paper on Claude), token overrides on both formats
+(`--bg-primary:#0a0612` color; `--bg-000:40 52.2% 91%` HSL triple), color-mode
+sync (ChatGPT `dark` class; Claude `data-mode=light` propagated to all 35
+`.cds-root` scopes), surfaces present, and the new `[role="dialog"]`/`[role="menu"]`
+anchors themed the ChatGPT profile menu + Settings dialog correctly. No errors.
+
+**Bug found + fixed (timing).** The health check ran at the initial
+document_start apply — before ChatGPT's SPA hydrates `main`/`header`/`nav` — so
+it logged "unresolved anchors" (3) for surfaces that mount a moment later. That's
+a false-positive source for telemetry/self-healing. Moved it out of `apply()`
+(which also fired on every settings change) into a single deferred run
+`HEALTH_CHECK_DELAY_MS` (2.5s) after the body is ready, so it judges anchor
+presence only once the page has settled. Gate: compile/test(123)/lint/build green.

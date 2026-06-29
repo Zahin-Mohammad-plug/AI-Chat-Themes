@@ -36,6 +36,9 @@ import {
 import type { HostId, Theme } from '@/src/themes/types';
 
 const REVEAL_FAILSAFE_MS = 800;
+// Health check runs this long after the body is ready, so SPA-mounted surfaces
+// (main/header/nav) have hydrated before we judge whether an anchor is missing.
+const HEALTH_CHECK_DELAY_MS = 2500;
 
 function cloakKey(host: HostId): string {
   return `act:cloak:${host}`;
@@ -119,29 +122,33 @@ export default defineContentScript({
       if (theme) {
         applyThemeToDocument(theme, adapter);
         writeCloakSnapshot(host, theme);
-        // Health check (PRD 5.4): unresolved anchors mean the host changed shape.
-        // Missing anchors simply weren't applied (degrade to native, never half-
-        // themed); report them only if the user opted into telemetry.
-        const report = runHealthCheck(adapter);
-        if (report.missing.length) {
-          console.debug('[AI Chat Themes] unresolved anchors', report.missing);
-          if (settings.telemetryEnabled) {
-            const event = buildTelemetryEvent(report, { extVersion, mapVersion, now: Date.now() });
-            if (event) {
-              try {
-                chrome.runtime.sendMessage({ type: TELEMETRY_MSG, event });
-              } catch {
-                /* worker may be asleep; telemetry is best-effort */
-              }
-            }
-          }
-        }
       } else {
         removeTheme();
         restoreColorMode(adapter, originalMode);
         clearCloakSnapshot(host);
       }
       reveal();
+    };
+
+    // Health check (PRD 5.4) — runs ONCE, deferred until the SPA has hydrated.
+    // Running it at the initial document_start apply would mis-read transient
+    // pre-mount absence of main/header/nav as a host-shape change and emit a
+    // false telemetry signal. We wait for the page to settle first.
+    const runDeferredHealthCheck = (settings: Settings): void => {
+      if (killed || !activeTheme) return;
+      const report = runHealthCheck(adapter);
+      if (!report.missing.length) return;
+      console.debug('[AI Chat Themes] unresolved anchors', report.missing);
+      if (settings.telemetryEnabled) {
+        const event = buildTelemetryEvent(report, { extVersion, mapVersion, now: Date.now() });
+        if (event) {
+          try {
+            chrome.runtime.sendMessage({ type: TELEMETRY_MSG, event });
+          } catch {
+            /* worker may be asleep; telemetry is best-effort */
+          }
+        }
+      }
     };
 
     // 3) Async init: resolve the active adapter map (cached-or-bundled), pick the
@@ -160,6 +167,7 @@ export default defineContentScript({
           startObserver(() => {
             if (activeTheme) applyThemeToDocument(activeTheme, adapter);
           });
+          setTimeout(() => runDeferredHealthCheck(settings), HEALTH_CHECK_DELAY_MS);
         });
       })
       .catch(() => reveal());
