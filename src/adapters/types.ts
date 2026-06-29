@@ -21,6 +21,13 @@ export interface AnchorRule {
   selector: string;
   /** CSS property -> theme token key. Engine resolves + applies with !important. */
   style: Partial<Record<string, TokenKey>>;
+  /**
+   * On-demand surface that may not exist at page load (a code block before any
+   * code is shown, a dialog/menu before it opens). The CSS still applies when it
+   * mounts, but the health check must NOT treat its absence as a host-shape
+   * failure — otherwise every fresh page would emit a false telemetry signal.
+   */
+  optional?: boolean;
 }
 
 /**

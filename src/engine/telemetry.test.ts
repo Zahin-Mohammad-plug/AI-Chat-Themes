@@ -9,6 +9,7 @@ const report = (missing: string[]): HealthReport => ({
   total: 5,
   resolved: ['app.shell'],
   missing,
+  optionalAbsent: [],
 });
 
 const ctx = { extVersion: '0.1.2', mapVersion: 1, now: 1700000000000 };

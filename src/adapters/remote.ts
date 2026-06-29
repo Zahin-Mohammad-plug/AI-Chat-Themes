@@ -42,7 +42,9 @@ function validAnchor(v: unknown): AnchorRule | null {
     if (!isStr(tk) || !TOKEN_SET.has(tk)) return null;
     style[prop] = tk as TokenKey;
   }
-  return { id: v.id, selector: v.selector, style };
+  const anchor: AnchorRule = { id: v.id, selector: v.selector, style };
+  if (typeof v.optional === 'boolean') anchor.optional = v.optional;
+  return anchor;
 }
 
 function validSignals(v: unknown): FingerprintSignals | undefined {

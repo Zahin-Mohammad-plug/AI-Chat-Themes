@@ -75,7 +75,13 @@ export function buildThemeCss(theme: Theme, adapter: HostAdapter): string {
     }
   }
 
-  // (4) Expressive layers (schema v2). Always layered on top of the palette
+  // (4) Themed text selection (durable, both hosts) — keeps highlighted text
+  // legible under the theme's accent rather than the host's native blue.
+  blocks.push(
+    `::selection {\n  background-color: ${t.accent} !important;\n  color: ${t['accent.text']} !important;\n}`,
+  );
+
+  // (5) Expressive layers (schema v2). Always layered on top of the palette
   // floor above — if a layer is absent or its asset is unknown, the surface
   // simply renders from the palette (PRD 6.1 graceful degradation).
   blocks.push(...buildExpressiveCss(theme));

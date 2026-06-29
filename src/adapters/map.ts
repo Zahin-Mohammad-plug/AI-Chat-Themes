@@ -58,14 +58,32 @@ const chatgpt: HostAdapter = {
     },
     { id: 'app.sidebar', selector: 'nav', style: { 'background-color': 'sidebar.bg' } },
     {
+      // Absent on non-chat routes (settings, shared links) — optional.
       id: 'composer.input',
       selector: '#prompt-textarea',
       style: { color: 'text.primary' },
+      optional: true,
     },
     {
+      // Only present once a code block is shown — optional.
       id: 'codeblock.body',
       selector: 'pre',
       style: { 'background-color': 'code.bg', color: 'text.primary' },
+      optional: true,
+    },
+    {
+      // Settings, account, share, and confirm dialogs (ARIA, durable) — optional.
+      id: 'overlay.dialog',
+      selector: '[role="dialog"]',
+      style: { 'background-color': 'bg.surface', color: 'text.primary' },
+      optional: true,
+    },
+    {
+      // Dropdown menus / model & profile pickers (ARIA, durable) — optional.
+      id: 'overlay.menu',
+      selector: '[role="menu"], [role="listbox"]',
+      style: { 'background-color': 'bg.elevated', color: 'text.primary' },
+      optional: true,
     },
   ],
 };
@@ -124,9 +142,25 @@ const claude: HostAdapter = {
       style: { 'background-color': 'bg.app', color: 'text.primary' },
     },
     {
+      // Only present once a code block is shown — optional.
       id: 'codeblock.body',
       selector: 'pre',
-      style: { 'background-color': 'code.bg' },
+      style: { 'background-color': 'code.bg', color: 'text.primary' },
+      optional: true,
+    },
+    {
+      // Settings, account, and confirm dialogs (ARIA, durable) — optional.
+      id: 'overlay.dialog',
+      selector: '[role="dialog"]',
+      style: { 'background-color': 'bg.surface', color: 'text.primary' },
+      optional: true,
+    },
+    {
+      // Dropdown menus / model & profile pickers (ARIA, durable) — optional.
+      id: 'overlay.menu',
+      selector: '[role="menu"], [role="listbox"]',
+      style: { 'background-color': 'bg.elevated', color: 'text.primary' },
+      optional: true,
     },
   ],
 };

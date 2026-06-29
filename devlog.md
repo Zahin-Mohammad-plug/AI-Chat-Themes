@@ -256,3 +256,41 @@ HSL→hex color helpers (`hslToRgb`/`rgbToHex`/`toHex`) in `src/util/color.ts`.
 Gate: compile clean, tests 57/57 (+9: generate 4, io 5), lint clean, build ok
 (`editor.html` 5.2 kB). M2 is now complete; next up is M4 (hosted store) — which
 the file-based import/export already covers ~80% of, per PRD §13.1.
+
+## 2026-06-28 — M3 hardening: surface coverage, false-positive fix, test matrix
+
+Prod-readiness pass on the M3 engine + theming across surfaces (no new milestone).
+
+**Settings UX.** Moved the telemetry opt-in out of the always-visible popup body
+into a collapsed `<details>` "Settings" disclosure — no longer shown persistently
+on every popup open.
+
+**Health-check false-positive fix (real bug).** Anchors gained an `optional` flag
+for on-demand surfaces. The health check previously counted `codeblock.body` as
+"missing" on any page without a code block (e.g. the landing screen), which would
+have emitted a bogus "host changed" telemetry signal every load. Now optional
+anchors that are absent are tracked separately (`optionalAbsent`) and never count
+as failures; only required anchors (shell/main/header/sidebar) signal a real
+host-shape break.
+
+**Surface coverage.** Added durable ARIA anchors for `[role="dialog"]` (settings /
+account / confirm modals) and `[role="menu"], [role="listbox"]` (dropdowns /
+model picker) on both hosts — marked optional. Gave Claude code blocks a text
+color. Added a themed `::selection` rule (accent + accent.text) so highlighted
+text stays legible on both light and dark themes.
+
+**Test matrix (57 -> 123 tests).** New `coverage.test.ts` runs every built-in
+theme x both hosts: valid non-empty CSS, no undefined/NaN, app-shell + code +
+::selection present, and (Claude) every host token var is a valid bare HSL
+triple. Plus surface-anchor presence, light/dark/amoled generated themes render
+clean, and `health.test.ts` locks in the optional-anchor rule.
+
+**Visual QA.** `scripts/render-surfaces.mjs` renders a surface stress test (chat +
+code block, document/artifact with a table, settings dialog + menu) in a dark
+(Dracula) and light (Paper) theme — `docs/store/screenshots/surfaces-{dark,light}.png`.
+Both verified readable across all surfaces.
+
+Gate: compile clean, tests 123/123, lint clean, build ok. Remaining for true
+prod sign-off: a live pass on the actual hosts (load unpacked, log in, walk
+code/settings/artifact surfaces) — the one thing only an authenticated browser
+can confirm.
