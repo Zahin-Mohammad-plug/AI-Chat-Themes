@@ -2,9 +2,17 @@
 
 **Name:** AI Chat Themes: Custom Themes & Dark Mode for ChatGPT and Claude
 **Type:** Chrome Extension (Manifest V3), Chromium-first, Firefox-portable
-**Status:** Draft v1.1 (schema v2: expressive/material/motion themes), ready for agent decomposition
+**Status:** v1.1 — **M1–M3 implemented and shipped** (palette + expressive themes, live creator, import/export, resilience pipeline). M4 hosted store deferred. Opt-in telemetry is built but **disabled (no data-collection UI)** for the current Chrome Web Store submission.
 **Owner:** Zahin
 **Audience:** Coding agents + reviewing engineer
+
+> **Implementation status (2026-06-28):** M1 core engine + palette themes ✅ · M2
+> expressive themes + theme creator + import/export ✅ · M3 resilience (remote
+> adapter-map pipeline, fingerprinting, kill switch, self-healing, telemetry
+> module) ✅. Remote endpoints (adapter map + telemetry collector) ship `null`
+> and the telemetry opt-in is currently not exposed in the UI, so the shipped
+> package collects nothing. M4 (hosted store) is intentionally not built — local
+> file-based import/export covers the sharing need per §13.1.
 
 ---
 
@@ -380,7 +388,7 @@ Options: free + donations (most competitors), freemium (premium theme packs / ad
 
 - Request the **minimum** host permissions: `chatgpt.com` and `claude.ai` (and any same-origin embedded surfaces actually needed), plus `storage`. Avoid broad `<all_urls>`.
 - **[INVARIANT]** No collection of prompts, responses, conversation content, page text, or personal data. Ever.
-- Telemetry (Section 5.4) is **opt-in**, anonymous, and limited to structural failure signals and version fingerprints. Publish exactly what is collected.
+- Telemetry (Section 5.4) is **opt-in**, anonymous, and limited to structural failure signals and version fingerprints. Publish exactly what is collected. **Current release:** the telemetry module ships but its opt-in is **not exposed in the UI** and the collector endpoint is `null`, so the package collects and transmits nothing. Re-expose the opt-in (and a populated privacy disclosure) before enabling it.
 - Ship a clear privacy policy. Privacy is a real differentiator here and a Chrome Web Store review checkpoint.
 
 ---
@@ -413,11 +421,11 @@ Options: free + donations (most competitors), freemium (premium theme packs / ad
 
 ## 18. Milestones / phasing [ADAPT]
 
-- **M0 Spike:** Prove token-override theming on both hosts; map each host's exposed CSS variables; confirm FOUC cloak + failsafe; confirm remote JSON/CSS fetch + cache + fallback. Output: feasibility confirmation + initial adapter map.
-- **M1 Core engine:** Schema (v2-ready), engine (apply/observe/health-check), bundled **palette** themes (Wave 1 set, Section 6.3) per host, popup, per-host toggle, FOUC handling. Ships as a working themer.
-- **M2 Creator + expressive themes:** Live editor, contrast validation, generate-from-accent, import/export. Implement the `effects`/`material`/`motion` engine paths and ship the Wave 2 **expressive** set (Section 6.3), Tier 1 first (Black & White, Neo-Brutalism, Primary, Shiny Gold, Lighting), then Tier 2 (Diamond, Neomorphism, Marble red/white/electric blue) behind the readability and performance guardrails in 6.2.
-- **M3 Resilience hardening:** Remote adapter map pipeline, fingerprinting, kill switch, opt-in telemetry, self-healing.
-- **M4 (optional) Store:** Backend, publishing, moderation, ratings, sandboxed advanced CSS.
+- **M0 Spike:** ✅ Prove token-override theming on both hosts; map each host's exposed CSS variables; confirm FOUC cloak + failsafe; confirm remote JSON/CSS fetch + cache + fallback. Output: feasibility confirmation + initial adapter map.
+- **M1 Core engine:** ✅ Schema (v2-ready), engine (apply/observe/health-check), bundled **palette** themes per host, popup, per-host toggle, FOUC handling. Ships as a working themer.
+- **M2 Creator + expressive themes:** ✅ Live editor, contrast validation, generate-from-accent, import/export, and the `effects`/`material` engine paths with a shipped expressive showcase (Aurora gradient, Forest + Cyberpunk textures, Midnight OLED, Paper). `motion` is schema-defined but no built-in ships motion yet.
+- **M3 Resilience hardening:** ✅ Remote adapter-map pipeline, fingerprinting, kill switch (per-host + per-surface), self-healing health check, and an opt-in telemetry module. Remote endpoints ship `null`; telemetry opt-in is currently not exposed (see §15).
+- **M4 (optional) Store:** ⬜ Deferred. Backend, publishing, moderation, ratings, sandboxed advanced CSS. Local import/export covers sharing for now (§13.1).
 
 ---
 

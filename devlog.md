@@ -332,3 +332,21 @@ theme mode, a neutral readable pairing (#f6f6f7/#1a1a1a or #0d0d0f/#e6e6e6) when
 they differ. Validated live: contrast 1.11 → **16.48:1**. Trade-off: a dark
 theme on a light OS shows a light code block — readable beats theme-matched but
 unreadable (PRD 5.4). Tests 123 → 126; compile/lint/build green.
+
+## 2026-06-28 — v0.1.3: telemetry UI disabled, PRD/docs refreshed, store rezip
+
+Prep for Chrome Web Store resubmission.
+
+- **Data collection off.** Removed the telemetry opt-in toggle from the popup
+  ("Settings" disclosure deleted). The telemetry module + storage flag remain in
+  the code but are no longer reachable from the UI, and both remote endpoints
+  (`REMOTE_MAP_URL`, `TELEMETRY_URL`) ship `null` — so the packaged extension
+  collects and transmits nothing. Re-expose the opt-in before ever enabling it.
+- **PRD updated** (`docs/PRD.md`): status now reflects M1–M3 shipped / M4
+  deferred; milestones §18 marked done; privacy §15 notes telemetry is built but
+  unexposed for this release.
+- **CLAUDE.md** state line updated to M1–M3 shipped.
+- **Version bump** 0.1.2 → 0.1.3 (Chrome rejects a resubmit at the same version).
+- Rezipped via `pnpm zip` for upload.
+
+Gate: compile/test/lint/build green.

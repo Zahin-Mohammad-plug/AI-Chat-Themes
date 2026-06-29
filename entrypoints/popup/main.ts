@@ -10,7 +10,6 @@ import {
   getSettings,
   setHostEnabled,
   setHostTheme,
-  setTelemetryEnabled,
   type Settings,
 } from '@/src/storage';
 import type { HostId, Theme } from '@/src/themes/types';
@@ -73,21 +72,9 @@ function renderGallery(host: HostId, settings: Settings): void {
   }
 }
 
-async function wireTelemetryToggle(settings: Settings): Promise<void> {
-  const toggle = $<HTMLInputElement>('telemetry-toggle');
-  toggle.checked = settings.telemetryEnabled;
-  toggle.addEventListener('change', () => {
-    void setTelemetryEnabled(toggle.checked);
-  });
-}
-
 async function init(): Promise<void> {
   const host = await getActiveHost();
   const hostLabel = $('host-label');
-
-  // Telemetry opt-in is global — wire it before the host gate so it works on
-  // any tab (including unsupported ones).
-  await wireTelemetryToggle(await getSettings());
 
   // Open the theme editor (deep-linking the current host's active theme if any).
   $('open-editor').addEventListener('click', async () => {

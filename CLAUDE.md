@@ -7,7 +7,12 @@ lives in [AGENTS.md](AGENTS.md). Read that first.
 
 `AI Chat Themes` — an MV3 Chrome extension (WXT + TypeScript + pnpm) that themes
 ChatGPT and Claude.ai via a token-first, resilience-by-design engine. Current
-state: **M0 + M1 vertical slice** (see [docs/BUILD_PLAN.md](docs/BUILD_PLAN.md)).
+state: **M1–M3 shipped** — palette + expressive themes, live theme creator with
+import/export, and the resilience pipeline (remote adapter-map, fingerprinting,
+kill switch, self-healing). **M4 hosted store is deferred.** Opt-in telemetry is
+built but **disabled (no data-collection UI)** for the Chrome Web Store
+submission; remote endpoints ship `null`, so the package collects nothing. See
+[docs/PRD.md](docs/PRD.md) §15/§18 and [docs/BUILD_PLAN.md](docs/BUILD_PLAN.md).
 
 ## Before you edit
 
