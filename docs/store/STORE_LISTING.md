@@ -6,9 +6,9 @@ must resolve before the listing will pass review.
 
 ## Package
 
-- Upload artifact: `.output/ai-chat-themes-0.1.0-chrome.zip` (run `pnpm zip` to
+- Upload artifact: `.output/ai-chat-themes-0.1.3-chrome.zip` (run `pnpm zip` to
   regenerate).
-- Manifest V3, version `0.1.0`.
+- Manifest V3, version `0.1.3`.
 
 ## Listing fields
 
@@ -51,11 +51,16 @@ must resolve before the listing will pass review.
 > Claude.ai web interfaces.
 
 **Permission justifications (required)**
-- `storage`: Persist the user's selected theme and per-site on/off settings
-  locally so they survive between sessions.
+- `storage`: Persist the user's selected theme, custom themes, and per-site on/off
+  settings locally so they survive between sessions.
 - Host permission `*://chatgpt.com/*`: Inject theme CSS into the ChatGPT web app.
 - Host permission `*://claude.ai/*`: Inject theme CSS into the Claude.ai web app.
 - Remote code: **None.** All logic ships in the package; no remotely hosted code.
+
+> This build requests **only** `storage` plus the two host permissions — nothing
+> else to justify. (`alarms` was removed: it only powered the periodic remote
+> adapter-map refresh, which is dormant in this release. Re-add it alongside the
+> CDN host permission if/when remote updates are turned on.)
 
 **Promo tiles (Graphic assets tab)**
 - Small promo tile (440×280): `docs/store/promo/small-promo-440x280.jpg`
@@ -107,8 +112,11 @@ terms — I can prepare materials but cannot perform them:
 ## Notes
 
 - Review typically takes anywhere from hours to a few days for a new MV3 item.
-- Because permissions are minimal and there's no remote code or data collection,
-  this should review cleanly once the blockers above are handled.
-- This is the M0/M1 slice. The live theme editor, import/export, and remote
-  resilience pipeline (M2/M3) are not yet included — fine to ship as v0.1.0, just
-  set expectations in the listing if you like.
+- Because permissions are minimal (`storage` + two hosts) and there's no remote
+  code or data collection, this should review cleanly once the blockers above are
+  handled.
+- v0.1.3 ships M1–M3: palette + expressive themes, the live theme editor with
+  import/export, and the resilience engine (fingerprinting, self-healing,
+  per-host/per-surface kill switch). The hosted store (M4) is deferred. Opt-in
+  telemetry is built but disabled (no UI, null endpoint), so the package collects
+  nothing.

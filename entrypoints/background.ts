@@ -71,16 +71,23 @@ export default defineBackground(() => {
       // Reconcile/migrate existing settings against the current schema.
       await saveSettings(await getSettings());
     }
-    // Schedule periodic refresh + do one now.
-    chrome.alarms.create(REFRESH_ALARM, { periodInMinutes: MAP_REFRESH_MINUTES });
-    void refreshAdapterMap();
+    // Schedule the periodic remote-map refresh — ONLY when remote updates are
+    // configured. With REMOTE_MAP_URL null (default) we touch neither the
+    // network nor chrome.alarms, so the package needs no `alarms` permission.
+    // [NOTE] Re-add `"alarms"` to the manifest when you set REMOTE_MAP_URL.
+    if (REMOTE_MAP_URL) {
+      chrome.alarms.create(REFRESH_ALARM, { periodInMinutes: MAP_REFRESH_MINUTES });
+      void refreshAdapterMap();
+    }
   });
 
   chrome.runtime.onStartup?.addListener(() => void refreshAdapterMap());
 
-  chrome.alarms.onAlarm.addListener((alarm) => {
-    if (alarm.name === REFRESH_ALARM) void refreshAdapterMap();
-  });
+  if (REMOTE_MAP_URL) {
+    chrome.alarms.onAlarm.addListener((alarm) => {
+      if (alarm.name === REFRESH_ALARM) void refreshAdapterMap();
+    });
+  }
 
   // Telemetry relay from content scripts (opt-in, structurally limited payload).
   chrome.runtime.onMessage.addListener((msg) => {

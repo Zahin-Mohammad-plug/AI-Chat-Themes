@@ -10,11 +10,11 @@ export default defineConfig({
     short_name: 'AI Chat Themes',
     description:
       'Apply resilient, token-first themes (dark, light, AMOLED & more) to ChatGPT and Claude.ai. Not affiliated with OpenAI or Anthropic.',
-    // [INVARIANT] Minimum permissions: storage + alarms (periodic adapter-map
-    // refresh), and host access to the two hosts only. No <all_urls>.
-    // NOTE: enabling REMOTE_MAP_URL / TELEMETRY_URL (src/config.ts) also requires
-    // adding that origin to host_permissions for the background fetch.
-    permissions: ['storage', 'alarms'],
+    // [INVARIANT] Minimum permissions: storage only, plus host access to the two
+    // hosts. No <all_urls>. NOTE: enabling REMOTE_MAP_URL (src/config.ts) for
+    // hot adapter-map updates requires re-adding "alarms" here (periodic refresh)
+    // and the CDN origin to host_permissions for the background fetch.
+    permissions: ['storage'],
     host_permissions: ['*://chatgpt.com/*', '*://claude.ai/*'],
     action: {
       default_title: 'AI Chat Themes',

@@ -350,3 +350,15 @@ Prep for Chrome Web Store resubmission.
 - Rezipped via `pnpm zip` for upload.
 
 Gate: compile/test/lint/build green.
+
+## 2026-06-28 — Remove dormant `alarms` permission (store review)
+
+Store review flagged the `alarms` permission. It only scheduled the periodic
+remote adapter-map refresh, which is dormant in this build (`REMOTE_MAP_URL` is
+null), so it powered nothing observable — a rejection risk. Removed `"alarms"`
+from the manifest and guarded the `chrome.alarms.create`/`onAlarm` calls behind
+`if (REMOTE_MAP_URL)` in the background worker, so the API is only touched when
+remote updates are actually configured. Manifest now requests only `storage` +
+the two host permissions. Updated STORE_LISTING.md (version 0.1.3, permission
+notes, M1–M3 status) and rezipped. Re-add `"alarms"` when enabling REMOTE_MAP_URL.
+Gate: compile/test(126)/lint/build/zip green.
