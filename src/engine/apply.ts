@@ -86,7 +86,43 @@ export function buildThemeCss(theme: Theme, adapter: HostAdapter): string {
   // simply renders from the palette (PRD 6.1 graceful degradation).
   blocks.push(...buildExpressiveCss(theme));
 
+  // (6) Code-surface OS-scheme guard (for hosts whose syntax highlighting
+  // follows prefers-color-scheme, e.g. Claude). Emitted LAST so it wins over
+  // the code anchor at equal specificity.
+  blocks.push(...buildCodeSchemeCss(theme, adapter));
+
   return blocks.join('\n\n');
+}
+
+// Neutral, readable code surfaces used when the active theme's mode disagrees
+// with the OS scheme that drives the host's syntax tokens.
+const NEUTRAL_LIGHT_BG = '#f6f6f7';
+const NEUTRAL_LIGHT_FG = '#1a1a1a';
+const NEUTRAL_DARK_BG = '#0d0d0f';
+const NEUTRAL_DARK_FG = '#e6e6e6';
+
+/**
+ * For hosts whose code syntax follows the OS `prefers-color-scheme`, make the
+ * code background/text follow the OS scheme too. When the OS scheme matches the
+ * theme's mode we keep the theme's `code.bg`/`text.primary`; when they differ
+ * we fall back to a neutral readable pairing for that OS scheme — so syntax
+ * tokens are never stranded on a clashing background.
+ */
+function buildCodeSchemeCss(theme: Theme, adapter: HostAdapter): string[] {
+  if (!adapter.codeFollowsOsScheme) return [];
+  const t = theme.tokens;
+  const sel = adapter.anchors.find((a) => a.id === 'codeblock.body')?.selector ?? 'pre';
+  const themeIsDark = theme.base !== 'light';
+  const lightBg = themeIsDark ? NEUTRAL_LIGHT_BG : t['code.bg'];
+  const lightFg = themeIsDark ? NEUTRAL_LIGHT_FG : t['text.primary'];
+  const darkBg = themeIsDark ? t['code.bg'] : NEUTRAL_DARK_BG;
+  const darkFg = themeIsDark ? t['text.primary'] : NEUTRAL_DARK_FG;
+  const rule = (bg: string, fg: string): string =>
+    `  ${sel} {\n    background-color: ${bg} !important;\n    color: ${fg} !important;\n  }`;
+  return [
+    `@media (prefers-color-scheme: light) {\n${rule(lightBg, lightFg)}\n}`,
+    `@media (prefers-color-scheme: dark) {\n${rule(darkBg, darkFg)}\n}`,
+  ];
 }
 
 /**

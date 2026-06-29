@@ -80,6 +80,7 @@ export function validateHostAdapter(v: unknown): HostAdapter | null {
   };
   const signals = validSignals(v.signals);
   if (signals) adapter.signals = signals;
+  if (typeof v.codeFollowsOsScheme === 'boolean') adapter.codeFollowsOsScheme = v.codeFollowsOsScheme;
   // colorMode is passed through loosely (shape-checked) — it's host-defined data.
   if (isObj(v.colorMode) && (v.colorMode.type === 'class' || v.colorMode.type === 'attribute')) {
     adapter.colorMode = v.colorMode as HostAdapter['colorMode'];

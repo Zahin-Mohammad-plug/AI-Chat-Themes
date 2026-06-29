@@ -94,6 +94,9 @@ const claude: HostAdapter = {
   tokenFormat: 'hsl-triple',
   // Durable signal: Claude defines this base background token on :root.
   signals: { cssVars: ['--bg-000'] },
+  // Claude's code syntax highlighting follows the OS prefers-color-scheme, not
+  // its own data-mode — so the code surface must follow the OS scheme too.
+  codeFollowsOsScheme: true,
   // Claude expresses mode via a `data-mode` attribute on <html>. Its newer
   // design-system layer (`.cds-root`, which wraps message content) reads
   // `data-mode` on the element itself, so we propagate the mode there too —

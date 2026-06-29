@@ -68,6 +68,15 @@ export interface HostAdapter {
   /** Durable signals for fingerprint-based selection (PRD 5.5). */
   signals?: FingerprintSignals;
   /**
+   * True when the host's code-block SYNTAX highlighting follows the OS
+   * `prefers-color-scheme` rather than the host's own light/dark attribute
+   * (Claude does this). When set, the engine makes the code SURFACE follow the
+   * OS scheme too, so a dark theme on a light OS (or vice-versa) can't leave
+   * dark tokens on a dark code background. Readability beats theme-matched code
+   * tint (PRD 5.4: degrade to readable, never to broken).
+   */
+  codeFollowsOsScheme?: boolean;
+  /**
    * Host CSS custom property name -> theme token key. Tier-1 targeting (most
    * durable). Overriding these cascades automatically through the host.
    */

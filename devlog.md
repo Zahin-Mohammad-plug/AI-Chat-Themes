@@ -312,3 +312,23 @@ a false-positive source for telemetry/self-healing. Moved it out of `apply()`
 (which also fired on every settings change) into a single deferred run
 `HEALTH_CHECK_DELAY_MS` (2.5s) after the body is ready, so it judges anchor
 presence only once the page has settled. Gate: compile/test(123)/lint/build green.
+
+## 2026-06-28 — Fix Claude code-block contrast when theme mode ≠ OS mode
+
+Live-reproduced a real readability bug (reported by user, confirmed via Claude-in-
+Chrome with hard numbers): on Claude with a DARK theme while the **OS is in light
+mode**, code-snippet syntax tokens were nearly invisible — measured contrast
+**1.11:1** (need 4.5). Root cause: Claude's code-block *background* follows our
+forced `data-mode=dark` (→ near-black), but its syntax *tokens* follow the OS
+`prefers-color-scheme` (light → dark-colored tokens). Two different signals →
+dark tokens on a dark surface. Removing our override didn't help (native is the
+same split): `data-mode=dark` blackens the bg while the OS keeps tokens light.
+
+Fix: new adapter flag `codeFollowsOsScheme` (Claude only — ChatGPT's syntax
+follows the `.dark` class we control). When set, the engine emits
+`@media (prefers-color-scheme: …)` rules so the code SURFACE follows the OS
+scheme that drives the tokens: theme `code.bg`/`text` when the OS matches the
+theme mode, a neutral readable pairing (#f6f6f7/#1a1a1a or #0d0d0f/#e6e6e6) when
+they differ. Validated live: contrast 1.11 → **16.48:1**. Trade-off: a dark
+theme on a light OS shows a light code block — readable beats theme-matched but
+unreadable (PRD 5.4). Tests 123 → 126; compile/lint/build green.

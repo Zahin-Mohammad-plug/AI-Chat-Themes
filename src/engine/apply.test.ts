@@ -161,3 +161,26 @@ describe('buildThemeCss — schema-v2 expressive layers', () => {
     expect(css).not.toContain('text-shadow');
   });
 });
+
+describe('code-surface OS-scheme guard (codeFollowsOsScheme)', () => {
+  const amoled = getBuiltin('builtin-amoled') as Theme; // dark
+  const paper = getBuiltin('builtin-paper') as Theme; // light
+
+  it('Claude: a DARK theme falls back to a light code surface under a light OS', () => {
+    const css = buildThemeCss(amoled, BUNDLED_ADAPTER_MAP.hosts.claude);
+    expect(css).toContain('@media (prefers-color-scheme: light)');
+    expect(css).toContain('@media (prefers-color-scheme: dark)');
+    // light-OS branch uses a readable neutral light surface, not the black code.bg
+    expect(css).toMatch(/prefers-color-scheme: light\) \{\s*pre \{\s*background-color: #f6f6f7/);
+  });
+
+  it('Claude: a LIGHT theme falls back to a dark code surface under a dark OS', () => {
+    const css = buildThemeCss(paper, BUNDLED_ADAPTER_MAP.hosts.claude);
+    expect(css).toMatch(/prefers-color-scheme: dark\) \{\s*pre \{\s*background-color: #0d0d0f/);
+  });
+
+  it('ChatGPT (class-based mode): no prefers-color-scheme code guard', () => {
+    const css = buildThemeCss(amoled, BUNDLED_ADAPTER_MAP.hosts.chatgpt);
+    expect(css).not.toContain('prefers-color-scheme');
+  });
+});
