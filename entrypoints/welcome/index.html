@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Welcome — AI Chat Themes</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0e0e10;
+        --surface: #16161a;
+        --text: #ececec;
+        --dim: #a0a0a8;
+        --border: rgba(255, 255, 255, 0.12);
+        --accent: #7c8cff;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--text);
+        font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+      }
+      .card {
+        width: 100%;
+        max-width: 560px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 32px 30px;
+      }
+      h1 {
+        font-size: 22px;
+        margin: 0 0 6px;
+      }
+      .sub {
+        color: var(--dim);
+        margin: 0 0 22px;
+        line-height: 1.5;
+      }
+      .ok {
+        color: var(--accent);
+      }
+      .row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 24px;
+      }
+      a.btn {
+        flex: 1 1 200px;
+        text-align: center;
+        text-decoration: none;
+        background: var(--accent);
+        color: #0e0e10;
+        font-weight: 600;
+        padding: 12px 16px;
+        border-radius: 10px;
+      }
+      a.btn.secondary {
+        background: transparent;
+        color: var(--text);
+        border: 1px solid var(--border);
+      }
+      ol {
+        margin: 0;
+        padding-left: 20px;
+        line-height: 1.7;
+        color: var(--text);
+      }
+      ol .dim {
+        color: var(--dim);
+      }
+      .foot {
+        margin: 22px 0 0;
+        font-size: 12px;
+        color: var(--dim);
+        border-top: 1px solid var(--border);
+        padding-top: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <h1>AI Chat Themes is installed <span class="ok">✓</span></h1>
+      <p class="sub">
+        Theme <strong>ChatGPT</strong> and <strong>Claude.ai</strong> — independently, with no
+        flash on load. Open one to see your theme applied.
+      </p>
+
+      <div class="row">
+        <a class="btn" href="https://chatgpt.com" target="_blank" rel="noopener">Open ChatGPT</a>
+        <a class="btn secondary" href="https://claude.ai" target="_blank" rel="noopener"
+          >Open Claude.ai</a
+        >
+      </div>
+
+      <ol>
+        <li>Click the <strong>AI Chat Themes</strong> icon in your toolbar to pick a theme.</li>
+        <li>Toggle each site on or off independently, or open the editor to build your own.</li>
+        <li class="dim">
+          Already had ChatGPT or Claude open? Reload that tab — themes apply to pages opened after
+          install.
+        </li>
+      </ol>
+
+      <p class="foot">Not affiliated with OpenAI or Anthropic. No data is collected.</p>
+    </main>
+  </body>
+</html>

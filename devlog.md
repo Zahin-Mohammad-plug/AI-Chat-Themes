@@ -362,3 +362,22 @@ remote updates are actually configured. Manifest now requests only `storage` +
 the two host permissions. Updated STORE_LISTING.md (version 0.1.3, permission
 notes, M1–M3 status) and rezipped. Re-add `"alarms"` when enabling REMOTE_MAP_URL.
 Gate: compile/test(126)/lint/build/zip green.
+
+## 2026-06-28 — v0.1.4: fresh-install onboarding (fix "doesn't work" report)
+
+A store user reported the extension "doesn't work" on a fresh install. Traced it
+live via Claude-in-Chrome: the build themes correctly on a freshly-loaded host
+page (ChatGPT confirmed), so it's not a code break. Root cause is a first-run
+gap: MV3 does NOT inject content scripts into tabs that were already open when the
+extension installs, and there was no onboarding — so a user who installs while
+ChatGPT/Claude is open sees no change until they manually reload, and nothing
+tells them to.
+
+Fix (no new permissions): on `onInstalled` reason=install, the background worker
+(a) queries open `chatgpt.com`/`claude.ai` tabs (via existing host permissions)
+and reloads them so the theme applies immediately, and (b) opens a new
+`welcome.html` page confirming install, linking to both hosts, and pointing to the
+popup/editor. Both steps are best-effort (try/catch). Fills the PRD §10.3
+onboarding gap that was never built.
+
+Version 0.1.3 → 0.1.4; rezipped. Gate: compile/test(126)/lint/build green.

@@ -67,6 +67,25 @@ export default defineBackground(() => {
   chrome.runtime.onInstalled.addListener(async (details) => {
     if (details.reason === 'install') {
       await saveSettings(DEFAULT_SETTINGS);
+      // First-run handling. MV3 does NOT inject content scripts into tabs that
+      // were already open before install, so a user who installs while ChatGPT/
+      // Claude is open sees nothing until they reload — the #1 "doesn't work"
+      // report. Reload any open host tabs so the theme applies immediately, and
+      // open a welcome page so the install is visibly confirmed. Uses host
+      // permissions only (no `tabs`/`scripting` permission needed).
+      try {
+        const openHostTabs = await chrome.tabs.query({
+          url: ['*://chatgpt.com/*', '*://claude.ai/*'],
+        });
+        for (const t of openHostTabs) if (t.id != null) void chrome.tabs.reload(t.id);
+      } catch {
+        /* best-effort: nothing open, or query blocked */
+      }
+      try {
+        await chrome.tabs.create({ url: chrome.runtime.getURL('welcome.html') });
+      } catch {
+        /* welcome page is best-effort */
+      }
     } else {
       // Reconcile/migrate existing settings against the current schema.
       await saveSettings(await getSettings());

@@ -6,9 +6,9 @@ must resolve before the listing will pass review.
 
 ## Package
 
-- Upload artifact: `.output/ai-chat-themes-0.1.3-chrome.zip` (run `pnpm zip` to
+- Upload artifact: `.output/ai-chat-themes-0.1.4-chrome.zip` (run `pnpm zip` to
   regenerate).
-- Manifest V3, version `0.1.3`.
+- Manifest V3, version `0.1.4`.
 
 ## Listing fields
 

@@ -311,6 +311,12 @@ Components (names illustrative):
 
 ### 10.3 Onboarding [REF]
 - First run: pick a starting theme, explain the per-host model in one screen, set expectations about graceful degradation ("if the site changes, themes stay safe and we patch fast"). Keep it to one or two screens.
+- **Implemented (v0.1.4):** on install the background worker opens a welcome page
+  (`welcome.html`) confirming the extension is active, linking to both hosts, and
+  pointing to the popup/editor. It also reloads any already-open ChatGPT/Claude
+  tabs so the theme applies immediately — MV3 does not inject content scripts into
+  tabs that predate the install, which was the top "doesn't work on fresh install"
+  cause. Uses host permissions only (no `tabs`/`scripting` permission).
 
 ---
 
