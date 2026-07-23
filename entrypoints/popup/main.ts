@@ -21,6 +21,15 @@ const HOST_NAMES: Record<HostId, string> = {
 
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 
+// Rounded popup corners are safe only on macOS (transparent popup backing);
+// elsewhere the backing is opaque, so keep square corners. See style.css.
+type UAData = { platform?: string };
+const platform =
+  (navigator as Navigator & { userAgentData?: UAData }).userAgentData?.platform ??
+  navigator.platform ??
+  '';
+if (/mac/i.test(platform)) document.documentElement.classList.add('is-mac');
+
 async function getActiveHost(): Promise<HostId | null> {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   return hostFromUrl(tab?.url);
@@ -72,10 +81,10 @@ function renderGallery(host: HostId, settings: Settings): void {
   const builtins = themes.filter((t) => t.builtin);
   const expressive = (t: Theme): boolean => t.class === 'expressive';
 
-  // Color themes (palette) · Stylized themes (gradient/textured) · Your themes.
+  // Stylized themes (gradient/textured) · Color themes (palette) · Your themes.
   const groups: { title: string; items: Theme[] }[] = [
-    { title: 'Color themes', items: builtins.filter((t) => !expressive(t)) },
     { title: 'Stylized themes', items: builtins.filter(expressive) },
+    { title: 'Color themes', items: builtins.filter((t) => !expressive(t)) },
     { title: 'Your themes', items: themes.filter((t) => !t.builtin) },
   ];
 
@@ -95,7 +104,6 @@ function renderGallery(host: HostId, settings: Settings): void {
 
 async function init(): Promise<void> {
   const host = await getActiveHost();
-  const hostLabel = $('host-label');
 
   // Open the theme editor (deep-linking the current host's active theme if any).
   $('open-editor').addEventListener('click', async () => {
@@ -107,30 +115,28 @@ async function init(): Promise<void> {
     await chrome.tabs.create({ url });
   });
 
+  // No supported host in the active tab: keep the "ChatGPT & Claude" brand,
+  // hide the per-site switch + gallery, show the prompt.
   if (!host) {
-    hostLabel.textContent = 'No supported site';
     $('unsupported').classList.remove('hidden');
     return;
   }
 
   let settings = await getSettings();
-  hostLabel.textContent = HOST_NAMES[host];
-  $('controls').classList.remove('hidden');
   $('gallery').classList.remove('hidden');
 
+  // Per-site on/off switch lives in the header, scoped to the active host.
+  const toggleWrap = $('toggle-wrap');
   const toggle = $<HTMLInputElement>('enable-toggle');
-  const toggleLabel = $('toggle-label');
-  const syncToggle = (): void => {
-    toggle.checked = settings.hosts[host].enabled;
-    toggleLabel.textContent = settings.hosts[host].enabled
-      ? `Theming ${HOST_NAMES[host]}`
-      : `Disabled on ${HOST_NAMES[host]}`;
-  };
-  syncToggle();
+  const label = `Theme ${HOST_NAMES[host]}`;
+  toggleWrap.title = label;
+  toggle.setAttribute('aria-label', label);
+  toggle.checked = settings.hosts[host].enabled;
+  toggleWrap.classList.remove('hidden');
 
   toggle.addEventListener('change', async () => {
     settings = await setHostEnabled(host, toggle.checked);
-    syncToggle();
+    toggle.checked = settings.hosts[host].enabled;
   });
 
   renderGallery(host, settings);

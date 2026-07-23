@@ -403,3 +403,21 @@ Three UX changes ahead of resubmission.
 
 Version 0.1.4 → 0.1.5. Gate: compile/test(126)/lint/build/zip green. Both new
 pages verified visually (welcome + a faithful popup preview).
+
+## 2026-06-28 — Popup refinement: rounded shell, header switch, group order
+
+Follow-up polish on the popup.
+
+- **Rounded corners:** wrapped the popup in a `.shell` and round it via transparent
+  corners — but scoped to macOS only (`html.is-mac`, set from `navigator.platform`),
+  since Windows/Linux Chrome popups have an opaque backing that would show white
+  corner artifacts. Square (native) elsewhere.
+- **Per-site on/off switch moved into the header, top-left**, as a switch (hidden on
+  unsupported sites; tooltip/aria names the active host). Removed the separate
+  controls row.
+- **Brand sub is now "ChatGPT & Claude"** (was the dynamic active-host name).
+- **Gallery order:** Stylized themes now appear above Color themes; custom under
+  "Your themes".
+
+Still v0.1.5 (unsubmitted). Gate: compile/test(126)/lint/build/zip green. Popup
+verified via preview (rounded shell, header switch, Stylized-first).
