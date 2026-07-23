@@ -4,7 +4,7 @@
 // structural telemetry. [INVARIANT] Only JSON data is fetched — never code.
 
 import { defineBackground } from 'wxt/sandbox';
-import { BUNDLED_ADAPTER_MAP } from '@/src/adapters/map';
+import { BUNDLED_ADAPTER_MAP, hostFromUrl } from '@/src/adapters/map';
 import { selectActiveMap, validateAdapterMap } from '@/src/adapters/remote';
 import {
   MAP_REFRESH_MINUTES,
@@ -77,7 +77,12 @@ export default defineBackground(() => {
         const openHostTabs = await chrome.tabs.query({
           url: ['*://chatgpt.com/*', '*://claude.ai/*'],
         });
-        for (const t of openHostTabs) if (t.id != null) void chrome.tabs.reload(t.id);
+        // Double-check each URL actually resolves to a supported host before
+        // reloading, so we never disturb an unrelated tab even if the query
+        // filter were ever ignored.
+        for (const t of openHostTabs) {
+          if (t.id != null && hostFromUrl(t.url) != null) void chrome.tabs.reload(t.id);
+        }
       } catch {
         /* best-effort: nothing open, or query blocked */
       }
