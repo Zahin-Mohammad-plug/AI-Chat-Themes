@@ -2,7 +2,7 @@
   "name": "ai-chat-themes",
   "displayName": "AI Chat Themes: Custom Themes & Dark Mode for ChatGPT and Claude",
   "description": "Apply resilient, token-first themes (dark, light, AMOLED & more) to ChatGPT and Claude.ai. Not affiliated with OpenAI or Anthropic.",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "type": "module",
   "private": true,
   "scripts": {

@@ -19,6 +19,8 @@ export interface Settings {
   customThemes: Theme[];
   /** Opt-in anonymous structural telemetry (PRD 5.4). Off by default. */
   telemetryEnabled: boolean;
+  /** Whether the one-time in-page first-run hint has been shown (PRD 10.3). */
+  onboarded: boolean;
 }
 
 const STORAGE_KEY = 'act:settings';
@@ -32,6 +34,7 @@ export const DEFAULT_SETTINGS: Settings = {
   },
   customThemes: [],
   telemetryEnabled: false,
+  onboarded: false,
 };
 
 function mergeSettings(raw: unknown): Settings {
@@ -52,6 +55,7 @@ function mergeSettings(raw: unknown): Settings {
     },
     customThemes,
     telemetryEnabled: typeof r.telemetryEnabled === 'boolean' ? r.telemetryEnabled : false,
+    onboarded: r.onboarded === true,
   };
 }
 
@@ -119,6 +123,14 @@ export async function setTelemetryEnabled(enabled: boolean): Promise<Settings> {
   settings.telemetryEnabled = enabled;
   await saveSettings(settings);
   return settings;
+}
+
+/** Mark the one-time in-page first-run hint as shown, so it never repeats. */
+export async function setOnboarded(): Promise<void> {
+  const settings = await getSettings();
+  if (settings.onboarded) return;
+  settings.onboarded = true;
+  await saveSettings(settings);
 }
 
 /** Read the cached remote adapter map (raw, unvalidated). Validate before use. */

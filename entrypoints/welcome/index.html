@@ -7,12 +7,14 @@
     <style>
       :root {
         color-scheme: dark;
-        --bg: #0e0e10;
-        --surface: #16161a;
-        --text: #ececec;
-        --dim: #a0a0a8;
-        --border: rgba(255, 255, 255, 0.12);
-        --accent: #7c8cff;
+        --bg: #101014;
+        --surface: #1a1a20;
+        --elevated: #24242c;
+        --text: #f1f1f4;
+        --dim: #9a9aa6;
+        --border: rgba(255, 255, 255, 0.1);
+        --border-strong: rgba(255, 255, 255, 0.18);
+        --accent: #8b93ff;
       }
       * {
         box-sizing: border-box;
@@ -20,98 +22,143 @@
       body {
         margin: 0;
         min-height: 100vh;
-        background: var(--bg);
+        background:
+          radial-gradient(1200px 500px at 50% -10%, rgba(139, 147, 255, 0.14), transparent),
+          var(--bg);
         color: var(--text);
         font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+        -webkit-font-smoothing: antialiased;
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 40px 20px;
+        padding: 48px 20px;
       }
       .card {
         width: 100%;
-        max-width: 560px;
+        max-width: 540px;
         background: var(--surface);
         border: 1px solid var(--border);
-        border-radius: 16px;
-        padding: 32px 30px;
+        border-radius: 20px;
+        padding: 36px 34px;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+      }
+      .mark {
+        width: 40px;
+        height: 40px;
+        border-radius: 11px;
+        background: linear-gradient(135deg, #8b93ff, #b86bff);
+        margin-bottom: 20px;
       }
       h1 {
-        font-size: 22px;
-        margin: 0 0 6px;
+        font-size: 24px;
+        font-weight: 650;
+        letter-spacing: -0.02em;
+        margin: 0 0 10px;
       }
-      .sub {
+      p {
+        margin: 0 0 18px;
+        line-height: 1.6;
+        color: var(--text);
+      }
+      p.lead {
         color: var(--dim);
-        margin: 0 0 22px;
-        line-height: 1.5;
-      }
-      .ok {
-        color: var(--accent);
+        font-size: 15px;
       }
       .row {
         display: flex;
         gap: 12px;
         flex-wrap: wrap;
-        margin-bottom: 24px;
+        margin: 4px 0 26px;
       }
       a.btn {
-        flex: 1 1 200px;
+        flex: 1 1 190px;
         text-align: center;
         text-decoration: none;
-        background: var(--accent);
-        color: #0e0e10;
         font-weight: 600;
-        padding: 12px 16px;
-        border-radius: 10px;
+        padding: 13px 16px;
+        border-radius: 12px;
+        transition:
+          transform 0.14s ease,
+          background 0.14s ease;
       }
-      a.btn.secondary {
-        background: transparent;
+      a.btn:hover {
+        transform: translateY(-1px);
+      }
+      a.primary {
+        background: var(--accent);
+        color: #14141a;
+      }
+      a.secondary {
+        background: var(--elevated);
         color: var(--text);
+        border: 1px solid var(--border-strong);
+      }
+      .tip {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        background: var(--elevated);
         border: 1px solid var(--border);
-      }
-      ol {
-        margin: 0;
-        padding-left: 20px;
-        line-height: 1.7;
-        color: var(--text);
-      }
-      ol .dim {
+        border-radius: 12px;
+        padding: 14px 16px;
+        font-size: 13.5px;
         color: var(--dim);
+        line-height: 1.55;
+      }
+      .tip strong {
+        color: var(--text);
+        font-weight: 600;
       }
       .foot {
-        margin: 22px 0 0;
+        margin: 24px 0 0;
         font-size: 12px;
         color: var(--dim);
         border-top: 1px solid var(--border);
-        padding-top: 14px;
+        padding-top: 16px;
+        line-height: 1.5;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        a.btn {
+          transition: none;
+        }
       }
     </style>
   </head>
   <body>
     <main class="card">
-      <h1>AI Chat Themes is installed <span class="ok">✓</span></h1>
-      <p class="sub">
-        Theme <strong>ChatGPT</strong> and <strong>Claude.ai</strong> — independently, with no
-        flash on load. Open one to see your theme applied.
+      <div class="mark" aria-hidden="true"></div>
+      <h1>You're all set.</h1>
+      <p class="lead">
+        AI Chat Themes is live on ChatGPT and Claude. Your theme paints the page the moment it
+        loads — no flicker, no reload. Open one and take a look:
       </p>
 
       <div class="row">
-        <a class="btn" href="https://chatgpt.com" target="_blank" rel="noopener">Open ChatGPT</a>
+        <a class="btn primary" href="https://chatgpt.com" target="_blank" rel="noopener"
+          >Open ChatGPT</a
+        >
         <a class="btn secondary" href="https://claude.ai" target="_blank" rel="noopener"
-          >Open Claude.ai</a
+          >Open Claude</a
         >
       </div>
 
-      <ol>
-        <li>Click the <strong>AI Chat Themes</strong> icon in your toolbar to pick a theme.</li>
-        <li>Toggle each site on or off independently, or open the editor to build your own.</li>
-        <li class="dim">
-          Already had ChatGPT or Claude open? Reload that tab — themes apply to pages opened after
-          install.
-        </li>
-      </ol>
+      <p>
+        Everything lives behind the toolbar icon: pick a theme, turn either site on or off on its
+        own, or open the editor to build your own from a single color.
+      </p>
 
-      <p class="foot">Not affiliated with OpenAI or Anthropic. No data is collected.</p>
+      <div class="tip">
+        <span aria-hidden="true">↻</span>
+        <span>
+          <strong>Already had a chat open?</strong> Give that tab a refresh — themes take effect on
+          pages loaded after you installed.
+        </span>
+      </div>
+
+      <p class="foot">
+        An independent project, not affiliated with OpenAI or Anthropic. It never reads your
+        conversations and collects nothing.
+      </p>
     </main>
   </body>
 </html>

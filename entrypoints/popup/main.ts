@@ -48,27 +48,48 @@ function swatch(theme: Theme): string {
   return previewBar(theme) + `<div class="swatch">${cells}</div>`;
 }
 
+function makeCard(host: HostId, theme: Theme, activeId: string): HTMLButtonElement {
+  const card = document.createElement('button');
+  card.className = 'theme-card' + (theme.id === activeId ? ' active' : '');
+  card.type = 'button';
+  card.setAttribute('aria-pressed', String(theme.id === activeId));
+  const blurb = BUILTIN_BLURBS[theme.id] ?? (theme.builtin ? '' : 'Custom theme');
+  card.innerHTML =
+    swatch(theme) +
+    `<div class="theme-name">${escapeHtml(theme.name)}</div>` +
+    (blurb ? `<div class="theme-blurb">${escapeHtml(blurb)}</div>` : '');
+  card.addEventListener('click', async () => {
+    const next = await setHostTheme(host, theme.id);
+    renderGallery(host, next);
+  });
+  return card;
+}
+
 function renderGallery(host: HostId, settings: Settings): void {
   const gallery = $('gallery');
   const themes = allThemes(settings);
   const activeId = settings.hosts[host].themeId;
+  const builtins = themes.filter((t) => t.builtin);
+  const expressive = (t: Theme): boolean => t.class === 'expressive';
+
+  // Color themes (palette) · Stylized themes (gradient/textured) · Your themes.
+  const groups: { title: string; items: Theme[] }[] = [
+    { title: 'Color themes', items: builtins.filter((t) => !expressive(t)) },
+    { title: 'Stylized themes', items: builtins.filter(expressive) },
+    { title: 'Your themes', items: themes.filter((t) => !t.builtin) },
+  ];
 
   gallery.innerHTML = '';
-  for (const theme of themes) {
-    const card = document.createElement('button');
-    card.className = 'theme-card' + (theme.id === activeId ? ' active' : '');
-    card.type = 'button';
-    card.setAttribute('aria-pressed', String(theme.id === activeId));
-    const blurb = BUILTIN_BLURBS[theme.id] ?? (theme.builtin ? '' : 'Custom theme');
-    card.innerHTML =
-      swatch(theme) +
-      `<div class="theme-name">${escapeHtml(theme.name)}</div>` +
-      (blurb ? `<div class="theme-blurb">${escapeHtml(blurb)}</div>` : '');
-    card.addEventListener('click', async () => {
-      const next = await setHostTheme(host, theme.id);
-      renderGallery(host, next);
-    });
-    gallery.appendChild(card);
+  for (const g of groups) {
+    if (!g.items.length) continue;
+    const title = document.createElement('div');
+    title.className = 'group-title';
+    title.textContent = g.title;
+    gallery.appendChild(title);
+    const grid = document.createElement('div');
+    grid.className = 'group-grid';
+    for (const theme of g.items) grid.appendChild(makeCard(host, theme, activeId));
+    gallery.appendChild(grid);
   }
 }
 

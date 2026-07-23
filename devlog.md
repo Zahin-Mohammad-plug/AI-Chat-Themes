@@ -381,3 +381,25 @@ popup/editor. Both steps are best-effort (try/catch). Fills the PRD §10.3
 onboarding gap that was never built.
 
 Version 0.1.3 → 0.1.4; rezipped. Gate: compile/test(126)/lint/build green.
+
+## 2026-06-28 — v0.1.5: onboarding polish, in-page first-run hint, premium popup
+
+Three UX changes ahead of resubmission.
+
+- **Welcome copy rewritten** (`entrypoints/welcome/`): replaced the generic
+  AI-sounding checklist with concise, human copy and a warmer visual (accent mark,
+  soft radial glow, rounded card, refined buttons + refresh tip).
+- **One-time in-page first-run hint** (`src/engine/onboard.ts` + content script):
+  the first time a host page is themed after install, a small, self-contained,
+  dismissible toast appears (top-center, auto-dismiss 9s, reduced-motion aware)
+  pointing to the toolbar icon — then a new `onboarded` storage flag ensures it
+  never repeats. Answers "auto-open on visit" safely: it's a subtle non-blocking
+  hint, not a takeover or an auto-spawned tab. Pairs with the install-time welcome
+  tab + open-tab reload from v0.1.4.
+- **Premium popup restyle** (`entrypoints/popup/`): richer surfaces, larger radii,
+  a custom toggle switch, hover-lift cards, accent-ring active state, and grouped
+  gallery headings — **Color themes** (palette), **Stylized themes** (expressive:
+  Aurora/Forest/Cyberpunk), and **Your themes** (custom).
+
+Version 0.1.4 → 0.1.5. Gate: compile/test(126)/lint/build/zip green. Both new
+pages verified visually (welcome + a faithful popup preview).

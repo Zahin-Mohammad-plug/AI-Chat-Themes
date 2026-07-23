@@ -24,6 +24,7 @@ import {
   type ColorModeSnapshot,
 } from '@/src/engine/apply';
 import { runHealthCheck } from '@/src/engine/health';
+import { showOnboardingHint } from '@/src/engine/onboard';
 import { startObserver } from '@/src/engine/observer';
 import { buildTelemetryEvent } from '@/src/engine/telemetry';
 import {
@@ -31,6 +32,7 @@ import {
   getCachedAdapterMap,
   getSettings,
   onSettingsChanged,
+  setOnboarded,
   type Settings,
 } from '@/src/storage';
 import type { HostId, Theme } from '@/src/themes/types';
@@ -39,6 +41,8 @@ const REVEAL_FAILSAFE_MS = 800;
 // Health check runs this long after the body is ready, so SPA-mounted surfaces
 // (main/header/nav) have hydrated before we judge whether an anchor is missing.
 const HEALTH_CHECK_DELAY_MS = 2500;
+// Give the page a moment to settle before the one-time first-run hint appears.
+const ONBOARD_HINT_DELAY_MS = 1200;
 
 function cloakKey(host: HostId): string {
   return `act:cloak:${host}`;
@@ -168,6 +172,14 @@ export default defineContentScript({
             if (activeTheme) applyThemeToDocument(activeTheme, adapter);
           });
           setTimeout(() => runDeferredHealthCheck(settings), HEALTH_CHECK_DELAY_MS);
+          // First-run: show the one-time in-page hint once a theme is actually
+          // applied, then mark onboarded so it never repeats (on either host).
+          if (!settings.onboarded && !killed && activeTheme) {
+            setTimeout(() => {
+              showOnboardingHint();
+              void setOnboarded();
+            }, ONBOARD_HINT_DELAY_MS);
+          }
         });
       })
       .catch(() => reveal());
