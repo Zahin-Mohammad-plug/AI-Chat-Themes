@@ -77,7 +77,15 @@ export interface ThemeEffects {
  * remote fetch, MV3-safe) or, later, an allowlisted https URL.
  */
 export interface ThemeMaterial {
-  texture: string;
+  /** Bundled texture asset id (e.g. 'forest', 'cyber'). Optional; ignored when `image` is set. */
+  texture?: string;
+  /**
+   * A user-supplied background image as a self-contained, sanitized `data:` URI
+   * (png/jpeg/webp, byte-capped, metadata-stripped, processed locally — no
+   * network). Takes precedence over `texture` when present. Always painted under
+   * the mandatory readability scrim (PRD 6.2).
+   */
+  image?: string;
   /** Surfaces the texture paints. Defaults to ['bg.app']. Never behind body text without scrim. */
   appliesToSurfaces?: TokenKey[];
   /** Mandatory readability scrim: opacity (0..1) of the base bg color over the texture. */

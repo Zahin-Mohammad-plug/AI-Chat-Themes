@@ -219,10 +219,12 @@ body {
 /* Editor entry */
 .editor-link {
   padding: 10px 12px 4px;
+  display: flex;
+  gap: 8px;
 }
 
 .editor-link button {
-  width: 100%;
+  flex: 1;
   background: var(--pop-elevated);
   color: var(--pop-text);
   border: 1px solid var(--pop-border-strong);
@@ -237,9 +239,22 @@ body {
     background 0.14s ease;
 }
 
+.editor-link button.primary {
+  flex: 1.4;
+  background: var(--pop-accent);
+  color: #14141a;
+  border-color: var(--pop-accent);
+  font-weight: 600;
+}
+
 .editor-link button:hover {
   border-color: var(--pop-accent);
   background: var(--pop-accent-soft);
+}
+
+.editor-link button.primary:hover {
+  filter: brightness(1.05);
+  background: var(--pop-accent);
 }
 
 .editor-link button:focus-visible {

@@ -5,7 +5,7 @@
 // the injected <style> and fully restores the native host.
 
 import type { HostAdapter } from '@/src/adapters/types';
-import { resolveTexture } from '@/src/themes/assets';
+import { materialImageCss } from '@/src/themes/assets';
 import type { Theme, ThemeBase, ThemeTokens, TokenKey } from '@/src/themes/types';
 import { toHslTriple, toRgba } from '@/src/util/color';
 
@@ -138,7 +138,7 @@ function buildExpressiveCss(theme: Theme): string[] {
   // effects gradient (Tier 1), stacked in one `background-image`.
   const layers: string[] = [];
   if (theme.material) {
-    const tex = resolveTexture(theme.material.texture);
+    const tex = materialImageCss(theme.material);
     if (tex) {
       // [INVARIANT 6.2] Mandatory readability scrim: a solid wash of the base
       // bg color over the texture so text over the app shell stays AA-readable.

@@ -133,7 +133,7 @@ export function normalizeTheme(input: unknown): {
   const tokens = deriveTokens(base, p.tokens);
 
   const effects = sanitizeEffects(p.effects);
-  const material = sanitizeMaterial(p.material);
+  const material = sanitizeMaterial(p.material, warnings);
   const motion = sanitizeMotion(p.motion, warnings);
   // Schema v2 class: expressive if any treatment is present; else palette.
   const themeClass: ThemeClass =
@@ -212,6 +212,19 @@ function isUnsafeCss(v: string): boolean {
   return s.includes('url(') || s.includes('@import') || s.includes('expression(') || s.includes('javascript:');
 }
 
+// [INVARIANT 6.2] User background images are embedded, self-contained `data:`
+// URIs only — no network. Accept png/jpeg/webp base64 (NOT svg/gif: SVG can carry
+// script; GIF/animation is a perf risk). The strict base64 charset also guarantees
+// the value can't break out of the `url("…")` it's placed in. Byte-capped so a
+// single theme can't blow the chrome.storage.local budget.
+export const MAX_IMAGE_DATA_URL = 700_000; // ~700 KB base64 ≈ ~512 KiB decoded
+const IMAGE_DATA_URL_RE = /^data:image\/(?:png|jpe?g|webp);base64,[A-Za-z0-9+/]+=*$/;
+
+/** True if `v` is a safe, size-capped png/jpeg/webp base64 data URI. */
+export function isSafeImageDataUrl(v: unknown): v is string {
+  return typeof v === 'string' && v.length <= MAX_IMAGE_DATA_URL && IMAGE_DATA_URL_RE.test(v);
+}
+
 function sanitizeEffects(e: PartialTheme['effects']): ThemeEffects | undefined {
   if (!e || typeof e !== 'object') return undefined;
   const out: ThemeEffects = {};
@@ -222,16 +235,32 @@ function sanitizeEffects(e: PartialTheme['effects']): ThemeEffects | undefined {
   return Object.keys(out).length ? out : undefined;
 }
 
-function sanitizeMaterial(m: PartialTheme['material']): ThemeMaterial | undefined {
+function sanitizeMaterial(
+  m: PartialTheme['material'],
+  warnings: string[],
+): ThemeMaterial | undefined {
   if (!m || typeof m !== 'object') return undefined;
-  // Only a bundled asset id is accepted here (plain token, no url/scheme).
-  // Allowlisted https CDN textures are a later store-phase concern (PRD 13.3).
-  if (typeof m.texture !== 'string' || !/^[a-z0-9_-]+$/i.test(m.texture)) return undefined;
+
+  // A bundled texture id (plain token) and/or a user image (data URI) may be set.
+  const hasTexture = typeof m.texture === 'string' && /^[a-z0-9_-]+$/i.test(m.texture);
+  let image: string | undefined;
+  if (m.image != null) {
+    if (isSafeImageDataUrl(m.image)) image = m.image;
+    else warnings.push('material.image dropped: not a size-capped png/jpeg/webp data URI');
+  }
+  if (!hasTexture && !image) return undefined; // nothing usable → drop material
+
+  // Readability scrim: floor 0.65 for arbitrary user images, 0.5 for bundled
+  // textures; default 0.82 when unspecified.
+  const floor = image ? 0.65 : 0.5;
   const scrim =
     typeof m.scrimOpacity === 'number' && m.scrimOpacity >= 0 && m.scrimOpacity <= 1
-      ? Math.max(0.5, m.scrimOpacity) // never let the scrim drop below a readable floor
+      ? Math.max(floor, m.scrimOpacity)
       : 0.82;
-  const out: ThemeMaterial = { texture: m.texture, scrimOpacity: scrim };
+
+  const out: ThemeMaterial = { scrimOpacity: scrim };
+  if (hasTexture) out.texture = m.texture;
+  if (image) out.image = image;
   if (Array.isArray(m.appliesToSurfaces)) {
     const surfaces = m.appliesToSurfaces.filter((k) => TOKEN_KEYS.includes(k));
     if (surfaces.length) out.appliesToSurfaces = surfaces;

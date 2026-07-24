@@ -7,6 +7,8 @@
 // its theme's `bg.app`, so the mandatory scrim composites to a readable, on-
 // palette surface (PRD 6.2 readability guardrail).
 
+import type { ThemeMaterial } from './types';
+
 /** Deep, misty pine forest — for the Forest theme. */
 const FOREST_SVG = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800' viewBox='0 0 1200 800' preserveAspectRatio='xMidYMid slice'>
 <defs><linearGradient id='sky' x1='0' y1='0' x2='0' y2='1'>
@@ -71,4 +73,16 @@ export const TEXTURES: Record<string, string> = {
  */
 export function resolveTexture(id: string): string | null {
   return TEXTURES[id] ?? null;
+}
+
+/**
+ * Resolve a material to its CSS background `url(...)` value. A user-supplied
+ * `image` (a sanitized data URI) wins over a bundled `texture` id. Returns null
+ * if neither resolves, so the engine cleanly degrades to the base color.
+ */
+export function materialImageCss(material: ThemeMaterial | undefined): string | null {
+  if (!material) return null;
+  if (material.image) return `url("${material.image}")`;
+  if (material.texture) return resolveTexture(material.texture);
+  return null;
 }

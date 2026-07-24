@@ -437,3 +437,35 @@ popup in Chrome on macOS.
 - Rounded theme cards, swatches, previews, switch, and editor button are
   unchanged. The header switch and Stylized-first gallery ordering are also
   unchanged.
+
+## 2026-07-24 — v0.1.6: Design-with-AI workflow + local background images
+
+Two features that make custom themes actually approachable.
+
+**Design with AI (`src/themes/ai-prompt.ts`, editor).** A RealFaviconGenerator-style
+flow: the editor's new "✨ Design with AI" panel (Refine current / Create new +
+optional brief + ChatGPT/Claude destination) builds a structured prompt — the
+current theme JSON, an annotated field guide, hard rules (valid CSS only, WCAG AA,
+no remote/scripts/selectors), and a closing 5-star-review + support reminder (the
+AI surfaces the CTA to the user — never an in-app nag; compliant with the Web Store
+spam policy). "Copy prompt & open" copies under the click, shows a ~3s "Copied ✓ —
+opening [host]…" countdown, then opens the assistant (clipboard-blocked fallback:
+a selectable prompt box, no auto-open). "Paste AI result" extracts one fenced/raw
+JSON object (rejects multiple), runs the existing `parseImportedTheme` normalizer,
+re-attaches the user's original background image, avoids shadowing a built-in id,
+and loads an unsaved preview to review + Save. `buildDesignPrompt` is a pure module
+(reusable by the future public site). Popup entry is now two buttons: **✨ Create
+with AI** / **Edit manually**.
+
+**Local background images (`src/util/image.ts`, additive `material.image`).** Upload
+a PNG/JPEG/WebP; it's sniffed by magic bytes, decoded, **redrawn on a canvas
+(strips EXIF/metadata)**, downscaled to ≤1920px, and re-encoded to a ≤512 KiB
+webp/jpeg `data:` URI — all locally, no network. `sanitizeMaterial` accepts only
+that strict, size-capped png/jpeg/webp data URI (no svg/gif/remote) and enforces a
+**≥0.65 scrim floor**; `saveCustomTheme` enforces a ~4 MiB total image budget under
+the 10 MB quota. The engine paints it via `materialImageCss` under the existing
+mandatory scrim — invalid/missing → degrades to the base color. No schema-version
+bump, no new permissions (deliberately simpler than a keyed assets map / v3).
+
+Version 0.1.5 → 0.1.6. Gate: compile clean, tests 136/136 (+10: ai-prompt 4, image
+2, schema image cases 4), lint clean, build ok.

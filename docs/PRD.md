@@ -354,6 +354,17 @@ The hardest UX detail in this category. Required behavior:
 - Export to a portable theme file (the schema JSON). Import from file.
 - **[INVARIANT]** Import must validate against the schema and sanitize before applying (no arbitrary CSS execution path through import unless it goes through the advanced-CSS sandbox of 13.3).
 - **[ADAPT]** "Generate from accent color" helper: derive a full token set from one or two seed colors + base, so non-designers get a coherent theme fast. This is a strong differentiator versus preset-only competitors.
+- **Implemented (v0.1.6) — Design with AI:** the editor builds a portable, structured
+  prompt (current theme JSON + annotated field guide + safety rules + a review/support
+  reminder as the closing line) that the user pastes into ChatGPT/Claude; the AI returns
+  a strict theme JSON the user pastes back (`parseImportedTheme` normalizer + contrast
+  preview → Save). No AI API, no conversation access, no new permissions. The prompt
+  builder (`src/themes/ai-prompt.ts`) is a pure module the future public site can reuse.
+- **Implemented (v0.1.6) — background images (§6.2):** users can upload a PNG/JPEG/WebP,
+  processed locally (magic-byte sniff → canvas redraw that strips metadata → ≤1920px →
+  ≤512 KiB webp/jpeg `data:` URI) and stored in an additive `material.image` field (no
+  network, no SVG). Painted under the mandatory scrim (floor 0.65 for user images); a
+  ~4 MiB total budget stays under the storage quota.
 
 ---
 

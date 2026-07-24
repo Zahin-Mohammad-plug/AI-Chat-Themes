@@ -98,11 +98,27 @@ export function activeThemeForHost(settings: Settings, host: HostId): Theme | nu
   return findTheme(settings, hs.themeId) ?? getBuiltin(DEFAULT_THEME_ID) ?? null;
 }
 
+/** Total budget for embedded background-image data URIs across all custom themes.
+ *  Well under Chrome's ~10 MB chrome.storage.local quota (no unlimitedStorage). */
+export const MAX_TOTAL_IMAGE_BYTES = 4 * 1024 * 1024; // 4 MiB
+
+function totalImageBytes(themes: Theme[]): number {
+  return themes.reduce((n, t) => n + (t.material?.image?.length ?? 0), 0);
+}
+
 export async function saveCustomTheme(theme: Theme): Promise<Settings> {
   const settings = await getSettings();
-  const idx = settings.customThemes.findIndex((t) => t.id === theme.id);
-  if (idx >= 0) settings.customThemes[idx] = theme;
-  else settings.customThemes.push(theme);
+  const next = [...settings.customThemes];
+  const idx = next.findIndex((t) => t.id === theme.id);
+  if (idx >= 0) next[idx] = theme;
+  else next.push(theme);
+  // Guard the shared storage budget before committing an embedded image.
+  if (totalImageBytes(next) > MAX_TOTAL_IMAGE_BYTES) {
+    throw new Error(
+      'Not enough space: background images across your themes exceed the storage budget. Remove an image from another theme and try again.',
+    );
+  }
+  settings.customThemes = next;
   await saveSettings(settings);
   return settings;
 }

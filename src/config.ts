@@ -30,3 +30,15 @@ export const ADAPTER_MAP_CACHE_KEY = 'act:adapterMap';
 
 /** chrome.runtime message type for relaying a telemetry event to the worker. */
 export const TELEMETRY_MSG = 'act:telemetry';
+
+// --- Links (Chrome Web Store review + support) ---
+// Used by the "Design with AI" prompt's closing reminder and small footer links.
+// The review CTA is delivered by the generated prompt (the AI reminds the user
+// after a successful design) — never a gating or incentivized in-app nag.
+
+/** Deep link to the extension's Chrome Web Store reviews tab. */
+export const STORE_REVIEW_URL =
+  'https://chromewebstore.google.com/detail/cmmdmmbbbdjkfkcfjnaogoiaghagkdpk/reviews';
+
+/** Support / issue tracker. */
+export const SUPPORT_URL = 'https://github.com/Zahin-Mohammad-plug/AI-Chat-Themes/issues';

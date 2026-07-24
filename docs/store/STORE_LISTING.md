@@ -6,9 +6,9 @@ must resolve before the listing will pass review.
 
 ## Package
 
-- Upload artifact: `.output/ai-chat-themes-0.1.5-chrome.zip` (run `pnpm zip` to
+- Upload artifact: `.output/ai-chat-themes-0.1.6-chrome.zip` (run `pnpm zip` to
   regenerate).
-- Manifest V3, version `0.1.5`.
+- Manifest V3, version `0.1.6`.
 
 ## Listing fields
 
@@ -41,6 +41,10 @@ must resolve before the listing will pass review.
 > • Built for resilience: themes target each app's design tokens first, so they
 >   keep working across routine site updates, and safely fall back to the native
 >   look if a surface ever can't be themed.
+> • Design with AI: generate a ready-to-paste prompt that turns ChatGPT or Claude
+>   into your theme designer, then paste the result back to apply it.
+> • Make it yours: a live theme creator with per-token color pickers, gradients,
+>   and your own background image (processed on your device, never uploaded).
 > • Privacy-first: no prompts, responses, page content, or personal data are ever
 >   collected. Settings stay on your device.
 >

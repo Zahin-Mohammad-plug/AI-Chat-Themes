@@ -3,7 +3,7 @@
 // Apply/switch is instant: writes to storage; the content script re-applies live.
 
 import { hostFromUrl } from '@/src/adapters/map';
-import { resolveTexture } from '@/src/themes/assets';
+import { materialImageCss } from '@/src/themes/assets';
 import { BUILTIN_BLURBS } from '@/src/themes/builtins';
 import {
   allThemes,
@@ -31,11 +31,9 @@ function previewBar(theme: Theme): string {
   if (theme.effects?.appGradient) {
     return `<div class="preview" style="background:${theme.effects.appGradient}"></div>`;
   }
-  if (theme.material) {
-    const tex = resolveTexture(theme.material.texture);
-    if (tex) {
-      return `<div class="preview" style="background-image:${tex};background-size:cover;background-position:center"></div>`;
-    }
+  const tex = theme.material ? materialImageCss(theme.material) : null;
+  if (tex) {
+    return `<div class="preview" style="background-image:${tex};background-size:cover;background-position:center"></div>`;
   }
   return '';
 }
@@ -96,15 +94,20 @@ function renderGallery(host: HostId, settings: Settings): void {
 async function init(): Promise<void> {
   const host = await getActiveHost();
 
-  // Open the theme editor (deep-linking the current host's active theme if any).
-  $('open-editor').addEventListener('click', async () => {
-    let url = chrome.runtime.getURL('editor.html');
+  // Open the theme editor (deep-linking the current host's active theme; the AI
+  // entry also opens the "Design with AI" panel).
+  const openEditor = async (ai: boolean): Promise<void> => {
+    const params = new URLSearchParams();
     if (host) {
       const s = await getSettings();
-      url += `?theme=${encodeURIComponent(s.hosts[host].themeId)}`;
+      params.set('theme', s.hosts[host].themeId);
     }
-    await chrome.tabs.create({ url });
-  });
+    if (ai) params.set('ai', '1');
+    const q = params.toString();
+    await chrome.tabs.create({ url: chrome.runtime.getURL('editor.html') + (q ? `?${q}` : '') });
+  };
+  $('create-ai').addEventListener('click', () => void openEditor(true));
+  $('edit-manual').addEventListener('click', () => void openEditor(false));
 
   // No supported host in the active tab: keep the "ChatGPT & Claude" brand,
   // hide the per-site switch + gallery, show the prompt.

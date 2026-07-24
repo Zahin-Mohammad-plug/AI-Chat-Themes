@@ -1,8 +1,57 @@
 // Unit tests for the schema validator + base-aware fallback (PRD A2 accept).
 import { describe, expect, it } from 'vitest';
-import { assertBuiltinContrast, deriveTokens, normalizeTheme } from './schema';
+import {
+  assertBuiltinContrast,
+  deriveTokens,
+  isSafeImageDataUrl,
+  MAX_IMAGE_DATA_URL,
+  normalizeTheme,
+} from './schema';
 import { BUILTIN_THEMES } from './builtins';
 import { TOKEN_KEYS } from './types';
+
+const mat = (image: unknown, scrimOpacity = 0.8) =>
+  normalizeTheme({ name: 'x', base: 'dark', material: { image, scrimOpacity } }).theme;
+
+describe('material image (user background)', () => {
+  it('accepts a valid png/jpeg/webp base64 data URI', () => {
+    for (const mime of ['png', 'jpeg', 'jpg', 'webp']) {
+      const url = `data:image/${mime};base64,AAAABBBB`;
+      expect(isSafeImageDataUrl(url)).toBe(true);
+      expect(mat(url)?.material?.image).toBe(url);
+    }
+  });
+
+  it('enforces the 0.65 readability scrim floor when an image is present', () => {
+    const t = mat('data:image/png;base64,AAAA', 0.2);
+    expect(t?.material?.scrimOpacity).toBeGreaterThanOrEqual(0.65);
+  });
+
+  it('rejects svg, gif, remote, forged-mime, non-image, and oversized', () => {
+    const bad = [
+      'data:image/svg+xml;base64,AAAA', // script risk
+      'data:image/gif;base64,AAAA', // animation
+      'https://evil.example/x.png', // remote
+      'data:text/html;base64,AAAA', // not an image
+      'data:image/png;base64,AAAA!!', // invalid base64 charset
+      'data:image/png;base64,' + 'A'.repeat(MAX_IMAGE_DATA_URL), // oversized
+    ];
+    for (const image of bad) {
+      expect(isSafeImageDataUrl(image)).toBe(false);
+      expect(mat(image)?.material?.image).toBeUndefined();
+    }
+  });
+
+  it('keeps a bundled texture even when the image is dropped', () => {
+    const t = normalizeTheme({
+      name: 'x',
+      base: 'dark',
+      material: { texture: 'forest', image: 'not-a-data-uri', scrimOpacity: 0.8 },
+    }).theme;
+    expect(t?.material?.texture).toBe('forest');
+    expect(t?.material?.image).toBeUndefined();
+  });
+});
 
 describe('deriveTokens', () => {
   it('fills every token from base defaults when partial', () => {
