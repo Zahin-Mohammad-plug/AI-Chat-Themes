@@ -21,15 +21,6 @@ const HOST_NAMES: Record<HostId, string> = {
 
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 
-// Rounded popup corners are safe only on macOS (transparent popup backing);
-// elsewhere the backing is opaque, so keep square corners. See style.css.
-type UAData = { platform?: string };
-const platform =
-  (navigator as Navigator & { userAgentData?: UAData }).userAgentData?.platform ??
-  navigator.platform ??
-  '';
-if (/mac/i.test(platform)) document.documentElement.classList.add('is-mac');
-
 async function getActiveHost(): Promise<HostId | null> {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   return hostFromUrl(tab?.url);

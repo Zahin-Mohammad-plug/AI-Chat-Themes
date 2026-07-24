@@ -27,26 +27,7 @@ body {
   font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
   font-size: 13px;
   -webkit-font-smoothing: antialiased;
-}
-
-.shell {
-  background: var(--pop-bg);
   color: var(--pop-text);
-  overflow: hidden;
-}
-
-/* Rounded popup corners: only on macOS, where Chrome's popup window backing is
-   transparent, so making the corners transparent lets the rounded shell show.
-   On Windows/Linux the backing is opaque, so we keep square corners to avoid
-   white corner artifacts. Class is set from navigator.platform in main.ts. */
-html.is-mac,
-html.is-mac body {
-  background: transparent;
-}
-
-html.is-mac .shell {
-  border-radius: 16px;
-  border: 1px solid var(--pop-border);
 }
 
 .hidden {

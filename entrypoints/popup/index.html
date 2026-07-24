@@ -7,29 +7,27 @@
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
-    <div class="shell">
-      <header class="hdr">
-        <label class="hswitch hidden" id="toggle-wrap" title="Theme this site">
-          <input type="checkbox" id="enable-toggle" aria-label="Theme this site" />
-        </label>
-        <div class="brand">
-          <div class="title">AI Chat Themes</div>
-          <div class="sub">ChatGPT &amp; Claude</div>
-        </div>
-      </header>
+    <header class="hdr">
+      <label class="hswitch hidden" id="toggle-wrap" title="Theme this site">
+        <input type="checkbox" id="enable-toggle" aria-label="Theme this site" />
+      </label>
+      <div class="brand">
+        <div class="title">AI Chat Themes</div>
+        <div class="sub">ChatGPT &amp; Claude</div>
+      </div>
+    </header>
 
-      <section id="gallery" class="gallery hidden" aria-label="Theme gallery"></section>
+    <section id="gallery" class="gallery hidden" aria-label="Theme gallery"></section>
 
-      <section id="unsupported" class="unsupported hidden">
-        <p>Open <strong>chatgpt.com</strong> or <strong>claude.ai</strong> to pick a theme.</p>
-      </section>
+    <section id="unsupported" class="unsupported hidden">
+      <p>Open <strong>chatgpt.com</strong> or <strong>claude.ai</strong> to pick a theme.</p>
+    </section>
 
-      <section class="editor-link">
-        <button id="open-editor" type="button">✎ Create or edit themes</button>
-      </section>
+    <section class="editor-link">
+      <button id="open-editor" type="button">✎ Create or edit themes</button>
+    </section>
 
-      <footer class="ftr">Not affiliated with OpenAI or Anthropic.</footer>
-    </div>
+    <footer class="ftr">Not affiliated with OpenAI or Anthropic.</footer>
 
     <script type="module" src="./main.ts"></script>
   </body>

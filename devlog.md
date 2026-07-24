@@ -421,3 +421,19 @@ Follow-up polish on the popup.
 
 Still v0.1.5 (unsubmitted). Gate: compile/test(126)/lint/build/zip green. Popup
 verified via preview (rounded shell, header switch, Stylized-first).
+
+## 2026-07-23 — Remove transparent popup-shell artifact
+
+Corrected the rounded-shell experiment after testing the packaged `0.1.5`
+popup in Chrome on macOS.
+
+- Chrome owns the action-popup window frame; CSS can round only the extension
+  document inside it. The transparent macOS shell exposed Chrome's square,
+  light window outline around the rounded dark content, producing a double edge
+  instead of a genuinely rounded popup.
+- Removed the platform sniff, transparent root, inner border, and wrapper used
+  only for that experiment. The popup now paints an opaque native outer surface
+  consistently across Chrome, Firefox, macOS, Windows, and Linux.
+- Rounded theme cards, swatches, previews, switch, and editor button are
+  unchanged. The header switch and Stylized-first gallery ordering are also
+  unchanged.
