@@ -544,3 +544,162 @@ input[type='range'] {
 .modal-foot #ai-next {
   margin-left: auto;
 }
+
+/* --- Editor panel: Create-with-AI hero CTA --- */
+.ai-cta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(124, 140, 255, 0.45);
+  background: linear-gradient(135deg, rgba(124, 140, 255, 0.22), rgba(184, 107, 255, 0.16));
+  color: var(--ed-text);
+  cursor: pointer;
+}
+.ai-cta:hover {
+  border-color: var(--ed-accent);
+  filter: brightness(1.06);
+}
+.ai-cta-ico {
+  font-size: 20px;
+}
+.ai-cta-t {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+.ai-cta-title {
+  font-weight: 600;
+  font-size: 14px;
+}
+.ai-cta-sub {
+  font-size: 11.5px;
+  color: var(--ed-dim);
+}
+.ai-cta-arrow {
+  color: var(--ed-dim);
+  font-size: 16px;
+}
+
+/* --- Modal progress + step chrome --- */
+.modal-progress {
+  height: 3px;
+  background: var(--ed-border);
+}
+.modal-progress-bar {
+  height: 100%;
+  width: 25%;
+  background: var(--ed-accent);
+  transition: width 0.25s ease;
+}
+.step-eyebrow {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ed-accent);
+  margin-bottom: 6px;
+}
+.step-sub {
+  font-size: 12.5px;
+  color: var(--ed-dim);
+  margin: -6px 0 12px;
+}
+.modal-body h3 {
+  margin-bottom: 6px;
+}
+
+/* Choice cards (row layout with icon + arrow) */
+.choice {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+.choice-ico {
+  font-size: 22px;
+  flex: none;
+}
+.choice-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+.choice-go {
+  color: var(--ed-dim);
+  font-size: 16px;
+  transition: transform 0.14s ease;
+}
+.choice:hover {
+  border-color: var(--ed-accent);
+  background: var(--ed-surface);
+}
+.choice:hover .choice-go {
+  transform: translateX(3px);
+  color: var(--ed-accent);
+}
+
+/* Idea chips */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 10px 0 2px;
+}
+.chip {
+  font-size: 12px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: var(--ed-elevated);
+  border: 1px solid var(--ed-border);
+  color: var(--ed-dim);
+  cursor: pointer;
+}
+.chip:hover {
+  border-color: var(--ed-accent);
+  color: var(--ed-text);
+}
+
+/* Copy button + open row */
+.copy-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.open-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.open-btn {
+  flex: 1;
+}
+.open-btn .ext {
+  opacity: 0.55;
+}
+
+/* Step 4 optional image */
+.ai-img {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ed-border);
+}
+
+/* Ghost (Back) button */
+button.ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--ed-dim);
+}
+button.ghost:hover {
+  color: var(--ed-text);
+  border-color: var(--ed-border);
+}
+.modal-foot.hidden {
+  display: none !important;
+}

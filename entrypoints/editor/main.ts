@@ -204,12 +204,21 @@ function bindControls(): void {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && !$('ai-modal').classList.contains('hidden')) closeAiModal();
   });
-  $('ai-mode-edit').addEventListener('click', () => setAiMode('edit'));
-  $('ai-mode-create').addEventListener('click', () => setAiMode('create'));
+  // Step 1: picking a mode advances immediately.
+  $('ai-mode-edit').addEventListener('click', () => chooseMode('edit'));
+  $('ai-mode-create').addEventListener('click', () => chooseMode('create'));
+  // Step 2: idea chips fill the description.
+  document.querySelectorAll<HTMLButtonElement>('#ai-chips .chip').forEach((c) => {
+    c.addEventListener('click', () => addChip(c.dataset.chip ?? ''));
+  });
   $('ai-copy').addEventListener('click', onCopyPrompt);
   $('ai-open-claude').addEventListener('click', () => openHost('claude'));
   $('ai-open-chatgpt').addEventListener('click', () => openHost('chatgpt'));
   $<HTMLTextAreaElement>('ai-paste').addEventListener('input', onPasteInput);
+  // Step 4: optional background image (reuses the same pipeline as the editor).
+  $('ai-img-btn').addEventListener('click', () => $('ai-img-file').click());
+  $<HTMLInputElement>('ai-img-file').addEventListener('change', onAiImgUpload);
+  $('ai-img-remove').addEventListener('click', onAiImgRemove);
   $('ai-back').addEventListener('click', () => gotoStep(aiStep - 1));
   $('ai-next').addEventListener('click', onNext);
 
@@ -230,13 +239,17 @@ let aiStep = 1;
 let aiMode: 'edit' | 'create' = 'edit';
 let aiPrompt = '';
 let aiPendingTheme: Theme | null = null;
+let aiPendingImage: string | undefined;
 
 function openAiModal(): void {
   $<HTMLTextAreaElement>('ai-describe').value = '';
   $<HTMLTextAreaElement>('ai-paste').value = '';
   $('ai-current-name').textContent = draft.name || 'Untitled';
+  $('ai-detect').textContent = '';
   aiPendingTheme = null;
-  setAiMode('edit');
+  aiPendingImage = undefined;
+  syncAiImg();
+  aiMode = 'edit';
   gotoStep(1);
   $('ai-modal').classList.remove('hidden');
 }
@@ -245,11 +258,18 @@ function closeAiModal(): void {
   $('ai-modal').classList.add('hidden');
 }
 
-function setAiMode(mode: 'edit' | 'create'): void {
+/** Step 1: choosing a mode selects it AND advances (no separate Next). */
+function chooseMode(mode: 'edit' | 'create'): void {
   aiMode = mode;
-  $('ai-mode-edit').classList.toggle('active', mode === 'edit');
-  $('ai-mode-create').classList.toggle('active', mode === 'create');
   $('ai-describe-h').textContent = mode === 'create' ? 'Describe your theme' : 'Describe the changes';
+  gotoStep(2);
+}
+
+function addChip(text: string): void {
+  if (!text) return;
+  const ta = $<HTMLTextAreaElement>('ai-describe');
+  ta.value = ta.value.trim() ? `${ta.value.trim()}, ${text}` : text;
+  ta.focus();
 }
 
 function gotoStep(n: number): void {
@@ -257,19 +277,20 @@ function gotoStep(n: number): void {
   document
     .querySelectorAll<HTMLElement>('#ai-modal .step')
     .forEach((el) => el.classList.toggle('active', el.dataset.step === String(aiStep)));
-  document
-    .querySelectorAll<HTMLElement>('#ai-steps .dot')
-    .forEach((d, i) => d.classList.toggle('active', i < aiStep));
-  $('ai-back').classList.toggle('hidden', aiStep === 1);
+  $('ai-progress').style.width = `${(aiStep / 4) * 100}%`;
+  // Step 1 advances by clicking a card — hide the footer nav there.
+  $('ai-foot').classList.toggle('hidden', aiStep === 1);
+  $('ai-back').classList.toggle('hidden', aiStep <= 1);
   const next = $<HTMLButtonElement>('ai-next');
   if (aiStep === 4) {
     next.textContent = 'Apply theme';
     next.disabled = !aiPendingTheme;
   } else {
-    next.textContent = 'Next';
+    next.textContent = 'Next →';
     next.disabled = false;
   }
   if (aiStep === 3) preparePrompt();
+  if (aiStep === 2) $<HTMLTextAreaElement>('ai-describe').focus();
 }
 
 function onNext(): void {
@@ -359,11 +380,18 @@ function onPasteInput(): void {
 function applyAiResult(): void {
   if (!aiPendingTheme) return;
   const theme = aiPendingTheme;
-  // The AI can't author a background image — keep the current draft's image.
-  if (draft.material?.image && !theme.material?.image) {
+  // Attach a background image: one uploaded in this wizard (step 4) wins; else
+  // keep the current draft's existing image (the AI can't author one). It still
+  // passes sanitizeMaterial on save (data URI validated + scrim floor + budget).
+  const image = aiPendingImage ?? draft.material?.image;
+  if (image && !theme.material?.image) {
+    const scrim = theme.material?.scrimOpacity ?? draft.material?.scrimOpacity ?? 0.82;
     theme.material = {
-      ...(theme.material ?? { scrimOpacity: draft.material.scrimOpacity }),
-      image: draft.material.image,
+      ...(theme.material ?? {}),
+      image,
+      appliesToSurfaces: ['bg.app'],
+      scrimOpacity: Math.max(0.65, scrim),
+      size: 'cover',
     };
   }
   // Never let an AI result shadow a built-in id.
@@ -371,6 +399,40 @@ function applyAiResult(): void {
   loadDraft(theme);
   closeAiModal();
   status('Loaded from AI — review the preview + contrast, then Save.');
+}
+
+function syncAiImg(): void {
+  const has = !!aiPendingImage;
+  $('ai-img-remove').classList.toggle('hidden', !has);
+  const thumb = $('ai-img-thumb');
+  thumb.classList.toggle('hidden', !has);
+  if (has) thumb.style.backgroundImage = `url("${aiPendingImage}")`;
+  $('ai-img-btn').textContent = has ? 'Replace image' : '＋ Add background image';
+}
+
+async function onAiImgUpload(e: Event): Promise<void> {
+  const input = e.target as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = '';
+  if (!file) return;
+  const btn = $('ai-img-btn');
+  const label = btn.textContent;
+  btn.textContent = 'Processing…';
+  try {
+    const img = await processImageFile(file);
+    aiPendingImage = img.dataUrl;
+    syncAiImg();
+  } catch (err) {
+    btn.textContent = label;
+    const d = $('ai-detect');
+    d.className = 'detect bad';
+    d.textContent = (err as Error).message;
+  }
+}
+
+function onAiImgRemove(): void {
+  aiPendingImage = undefined;
+  syncAiImg();
 }
 
 // --- Background image ------------------------------------------------------

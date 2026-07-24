@@ -95,6 +95,8 @@ Give me the final theme as one \`\`\`json block — I'll paste it back into the 
 - Valid CSS colors only (hex, rgb/rgba, hsl); \`appGradient\` must be a valid CSS gradient. **No** \`url(...)\`, \`@import\`, remote links, scripts, selectors, or \`advancedCss\`.
 - Keep it readable: \`text.primary\` must be ≥ 4.5:1 contrast against both \`bg.surface\` and \`bg.app\` (WCAG AA).
 
+---
+
 User wants the following changes:
 
 ${desc}`;

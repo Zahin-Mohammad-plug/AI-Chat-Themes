@@ -8,10 +8,7 @@
   </head>
   <body>
     <header class="hdr">
-      <div class="row gap">
-        <button id="ai-open" type="button" class="primary">✨ Create with AI</button>
-        <div class="title">Theme editor</div>
-      </div>
+      <div class="title">Theme editor</div>
       <div class="row gap">
         <select id="theme-select" aria-label="Load a theme to edit"></select>
         <button id="new-btn" type="button">New</button>
@@ -21,6 +18,15 @@
     <main class="layout">
       <!-- Controls -->
       <section class="panel" aria-label="Theme controls">
+        <button id="ai-open" type="button" class="ai-cta">
+          <span class="ai-cta-ico">✨</span>
+          <span class="ai-cta-t">
+            <span class="ai-cta-title">Create with AI</span>
+            <span class="ai-cta-sub">Describe it — ChatGPT or Claude designs it for you</span>
+          </span>
+          <span class="ai-cta-arrow">→</span>
+        </button>
+
         <p id="builtin-note" class="note hidden">
           Editing a built-in — saving creates an editable copy.
         </p>
@@ -156,62 +162,87 @@
     <div id="ai-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-label="Create with AI">
       <div class="modal">
         <header class="modal-hdr">
-          <div class="modal-title">✨ Create with AI</div>
-          <div class="modal-steps" id="ai-steps">
-            <span class="dot active"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
-          </div>
+          <div class="modal-title">✨ Design with AI</div>
           <button id="ai-close" class="modal-x" type="button" aria-label="Close">×</button>
         </header>
+        <div class="modal-progress"><div class="modal-progress-bar" id="ai-progress"></div></div>
 
         <div class="modal-body">
           <section class="step active" data-step="1">
-            <h3>What do you want to do?</h3>
+            <div class="step-eyebrow">Step 1 of 4</div>
+            <h3>What are we making?</h3>
+            <p class="step-sub">Pick one to continue.</p>
             <div class="choice-grid">
-              <button type="button" class="choice active" id="ai-mode-edit">
-                <span class="choice-t">Edit current theme</span>
-                <span class="choice-s" id="ai-current-name">—</span>
+              <button type="button" class="choice" id="ai-mode-edit">
+                <span class="choice-ico">🎨</span>
+                <span class="choice-body">
+                  <span class="choice-t">Edit current theme</span>
+                  <span class="choice-s" id="ai-current-name">—</span>
+                </span>
+                <span class="choice-go">→</span>
               </button>
               <button type="button" class="choice" id="ai-mode-create">
-                <span class="choice-t">Create a new theme</span>
-                <span class="choice-s">Start fresh from a description</span>
+                <span class="choice-ico">✨</span>
+                <span class="choice-body">
+                  <span class="choice-t">Create a new theme</span>
+                  <span class="choice-s">Start fresh from an idea</span>
+                </span>
+                <span class="choice-go">→</span>
               </button>
             </div>
           </section>
 
           <section class="step" data-step="2">
+            <div class="step-eyebrow">Step 2 of 4</div>
             <h3 id="ai-describe-h">Describe the changes</h3>
             <textarea id="ai-describe" rows="4"
-              placeholder="e.g. warm sunset tones · softer contrast · a subtle blue gradient behind everything"></textarea>
+              placeholder="e.g. warm sunset tones, softer contrast, a subtle blue gradient behind everything"></textarea>
+            <div class="chips" id="ai-chips">
+              <button type="button" class="chip" data-chip="warm, cozy paper tones">Warm &amp; cozy</button>
+              <button type="button" class="chip" data-chip="high-contrast true-dark, easy on the eyes">High-contrast dark</button>
+              <button type="button" class="chip" data-chip="a calm ocean gradient behind everything">Ocean gradient</button>
+              <button type="button" class="chip" data-chip="neon cyberpunk with glowing accents">Cyberpunk neon</button>
+            </div>
             <p class="hint">
-              Optional — short or detailed both work, and you can add more in the chat after pasting.
-              The assistant will ask if it needs specifics.
+              Optional — a word or a paragraph both work, and you can add more in the chat. The
+              assistant will ask if it needs specifics.
             </p>
           </section>
 
           <section class="step" data-step="3">
-            <h3>Copy the prompt &amp; paste it in</h3>
-            <button type="button" id="ai-copy" class="copy-btn primary">Copy prompt</button>
+            <div class="step-eyebrow">Step 3 of 4</div>
+            <h3>Copy the prompt, then open your assistant</h3>
+            <button type="button" id="ai-copy" class="copy-btn primary">
+              <span class="copy-ico">⧉</span> Copy prompt
+            </button>
             <textarea id="ai-prompt-out" class="hidden" rows="6" aria-label="Prompt text"></textarea>
-            <p class="hint">
-              Open a new chat, paste it, and send. It ends with your changes so you can tweak them there.
-            </p>
-            <div class="paste-in">
-              <span class="lbl">Paste in:</span>
-              <button type="button" id="ai-open-claude">Claude.ai</button>
-              <button type="button" id="ai-open-chatgpt">ChatGPT</button>
+            <p class="hint">Open a new chat, paste, and send. Your changes sit at the end so you can tweak them there.</p>
+            <div class="open-row">
+              <button type="button" id="ai-open-claude" class="open-btn">Open Claude <span class="ext">↗</span></button>
+              <button type="button" id="ai-open-chatgpt" class="open-btn">Open ChatGPT <span class="ext">↗</span></button>
             </div>
           </section>
 
           <section class="step" data-step="4">
+            <div class="step-eyebrow">Step 4 of 4</div>
             <h3>Paste the result</h3>
             <textarea id="ai-paste" rows="5" placeholder="Paste the assistant's json block here"></textarea>
             <div id="ai-detect" class="detect"></div>
+            <div class="ai-img">
+              <div class="row gap bg-row">
+                <div id="ai-img-thumb" class="bg-thumb hidden" aria-hidden="true"></div>
+                <button type="button" id="ai-img-btn" class="grow">＋ Add background image</button>
+                <button type="button" id="ai-img-remove" class="danger hidden">Remove</button>
+                <input id="ai-img-file" type="file" accept="image/png,image/jpeg,image/webp" hidden />
+              </div>
+              <p class="hint">Optional — for a photo/texture background. Processed on your device (resized, compressed, metadata stripped).</p>
+            </div>
           </section>
         </div>
 
-        <footer class="modal-foot">
-          <button type="button" id="ai-back" class="hidden">Back</button>
-          <button type="button" id="ai-next" class="primary">Next</button>
+        <footer class="modal-foot" id="ai-foot">
+          <button type="button" id="ai-back" class="ghost hidden">← Back</button>
+          <button type="button" id="ai-next" class="primary">Next →</button>
         </footer>
       </div>
     </div>
