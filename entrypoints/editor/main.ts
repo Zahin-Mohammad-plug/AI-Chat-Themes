@@ -195,11 +195,20 @@ function bindControls(): void {
     if (theme) loadDraft(theme);
   });
 
-  // --- Design with AI ---
-  $('ai-mode-refine').addEventListener('click', () => setAiMode('refine'));
+  // --- Create with AI (modal wizard) ---
+  $('ai-open').addEventListener('click', openAiModal);
+  $('ai-close').addEventListener('click', closeAiModal);
+  $('ai-modal').addEventListener('click', (e) => {
+    if (e.target === $('ai-modal')) closeAiModal();
+  });
+  $('ai-mode-edit').addEventListener('click', () => setAiMode('edit'));
   $('ai-mode-create').addEventListener('click', () => setAiMode('create'));
-  $('ai-copy-open').addEventListener('click', onAiCopyOpen);
-  $('ai-load').addEventListener('click', onAiLoad);
+  $('ai-copy').addEventListener('click', onCopyPrompt);
+  $('ai-open-claude').addEventListener('click', () => openHost('claude'));
+  $('ai-open-chatgpt').addEventListener('click', () => openHost('chatgpt'));
+  $<HTMLTextAreaElement>('ai-paste').addEventListener('input', onPasteInput);
+  $('ai-back').addEventListener('click', () => gotoStep(aiStep - 1));
+  $('ai-next').addEventListener('click', onNext);
 
   // --- Background image ---
   $('bg-upload-btn').addEventListener('click', () => $('bg-file').click());
@@ -212,50 +221,92 @@ function bindControls(): void {
   $<HTMLAnchorElement>('support-link').href = SUPPORT_URL;
 }
 
-// --- Design with AI --------------------------------------------------------
+// --- Create with AI (modal wizard) -----------------------------------------
 
-let aiMode: 'refine' | 'create' = 'refine';
+let aiStep = 1;
+let aiMode: 'edit' | 'create' = 'edit';
+let aiPrompt = '';
+let aiPendingTheme: Theme | null = null;
 
-function setAiMode(mode: 'refine' | 'create'): void {
-  aiMode = mode;
-  $('ai-mode-refine').classList.toggle('active', mode === 'refine');
-  $('ai-mode-create').classList.toggle('active', mode === 'create');
+function openAiModal(): void {
+  $<HTMLTextAreaElement>('ai-describe').value = '';
+  $<HTMLTextAreaElement>('ai-paste').value = '';
+  $('ai-current-name').textContent = draft.name || 'Untitled';
+  aiPendingTheme = null;
+  setAiMode('edit');
+  gotoStep(1);
+  $('ai-modal').classList.remove('hidden');
 }
 
-async function onAiCopyOpen(): Promise<void> {
-  const brief = $<HTMLTextAreaElement>('ai-brief').value;
-  const dest = $<HTMLSelectElement>('ai-dest').value === 'claude' ? 'claude' : 'chatgpt';
-  const name = dest === 'claude' ? 'Claude' : 'ChatGPT';
-  const url = dest === 'claude' ? 'https://claude.ai/new' : 'https://chatgpt.com/';
-  const prompt = buildDesignPrompt({ theme: toSavable(), brief, mode: aiMode });
-  const out = $('ai-copy-status');
+function closeAiModal(): void {
+  $('ai-modal').classList.add('hidden');
+}
 
+function setAiMode(mode: 'edit' | 'create'): void {
+  aiMode = mode;
+  $('ai-mode-edit').classList.toggle('active', mode === 'edit');
+  $('ai-mode-create').classList.toggle('active', mode === 'create');
+  $('ai-describe-h').textContent = mode === 'create' ? 'Describe your theme' : 'Describe the changes';
+}
+
+function gotoStep(n: number): void {
+  aiStep = Math.max(1, Math.min(4, n));
+  document
+    .querySelectorAll<HTMLElement>('#ai-modal .step')
+    .forEach((el) => el.classList.toggle('active', el.dataset.step === String(aiStep)));
+  document
+    .querySelectorAll<HTMLElement>('#ai-steps .dot')
+    .forEach((d, i) => d.classList.toggle('active', i < aiStep));
+  $('ai-back').classList.toggle('hidden', aiStep === 1);
+  const next = $<HTMLButtonElement>('ai-next');
+  if (aiStep === 4) {
+    next.textContent = 'Apply theme';
+    next.disabled = !aiPendingTheme;
+  } else {
+    next.textContent = 'Next';
+    next.disabled = false;
+  }
+  if (aiStep === 3) preparePrompt();
+}
+
+function onNext(): void {
+  if (aiStep < 4) {
+    gotoStep(aiStep + 1);
+    return;
+  }
+  applyAiResult();
+}
+
+function preparePrompt(): void {
+  const description = $<HTMLTextAreaElement>('ai-describe').value;
+  aiPrompt = buildDesignPrompt({ theme: toSavable(), description, mode: aiMode });
+  const copy = $('ai-copy');
+  copy.textContent = 'Copy prompt';
+  copy.classList.remove('copied');
+  const out = $<HTMLTextAreaElement>('ai-prompt-out');
+  out.value = aiPrompt;
+  out.classList.add('hidden');
+}
+
+async function onCopyPrompt(): Promise<void> {
+  const copy = $('ai-copy');
   try {
-    await navigator.clipboard.writeText(prompt);
+    await navigator.clipboard.writeText(aiPrompt);
+    copy.textContent = 'Copied ✓';
+    copy.classList.add('copied');
   } catch {
-    // Clipboard blocked → show the prompt for manual copy; don't auto-open.
+    // Clipboard blocked → reveal the (editable) prompt so the user can copy it.
     const ta = $<HTMLTextAreaElement>('ai-prompt-out');
-    ta.value = prompt;
     ta.classList.remove('hidden');
     ta.focus();
     ta.select();
-    out.textContent = 'Couldn’t auto-copy — select the text above and copy it, then open your assistant.';
-    return;
+    copy.textContent = 'Select the text below to copy';
   }
+}
 
-  // Copied → brief countdown so the user sees it worked before the tab opens.
-  let n = 3;
-  const tick = (): void => {
-    if (n <= 0) {
-      out.textContent = `Copied ✓ — opening ${name}…`;
-      void chrome.tabs.create({ url });
-      return;
-    }
-    out.textContent = `Copied ✓ — opening ${name} in ${n}…`;
-    n -= 1;
-    window.setTimeout(tick, 1000);
-  };
-  tick();
+function openHost(which: 'claude' | 'chatgpt'): void {
+  const url = which === 'claude' ? 'https://claude.ai/new' : 'https://chatgpt.com/';
+  void chrome.tabs.create({ url });
 }
 
 /** Pull a single JSON object out of an AI reply (a fenced ```json block or raw). */
@@ -269,18 +320,42 @@ function extractJson(text: string): string | null {
   return body.slice(first, last + 1);
 }
 
-function onAiLoad(): void {
-  const raw = $<HTMLTextAreaElement>('ai-paste').value;
+/** Lenient parse for pasted AI output: extract one object, fix trailing commas,
+ *  then run the real normalizer. */
+function lenientParseTheme(raw: string): { theme: Theme | null; warnings: string[]; error?: string } {
   const json = extractJson(raw);
-  if (!json) {
-    status('Couldn’t find a single JSON object in that text.');
-    return;
+  if (!json) return { theme: null, warnings: [], error: 'Paste one ```json block (a single theme object).' };
+  const fixed = json.replace(/,(\s*[}\]])/g, '$1'); // basic correction: trailing commas
+  const { theme, result } = parseImportedTheme(fixed);
+  if (!theme) return { theme: null, warnings: [], error: result.errors.join('; ') || 'Not a valid theme.' };
+  return { theme, warnings: result.warnings };
+}
+
+function onPasteInput(): void {
+  const raw = $<HTMLTextAreaElement>('ai-paste').value.trim();
+  const detect = $('ai-detect');
+  aiPendingTheme = null;
+  if (!raw) {
+    detect.className = 'detect';
+    detect.textContent = '';
+  } else {
+    const parsed = lenientParseTheme(raw);
+    if (!parsed.theme) {
+      detect.className = 'detect bad';
+      detect.textContent = parsed.error ?? 'Couldn’t read a theme from that text.';
+    } else {
+      aiPendingTheme = parsed.theme;
+      detect.className = 'detect ok';
+      const warn = parsed.warnings.length ? ` — ${parsed.warnings.length} note(s)` : '';
+      detect.textContent = `Detected theme: “${parsed.theme.name}” ✓${warn}`;
+    }
   }
-  const { theme, result } = parseImportedTheme(json);
-  if (!theme) {
-    status(`Load failed: ${result.errors.join('; ')}`);
-    return;
-  }
+  if (aiStep === 4) $<HTMLButtonElement>('ai-next').disabled = !aiPendingTheme;
+}
+
+function applyAiResult(): void {
+  if (!aiPendingTheme) return;
+  const theme = aiPendingTheme;
   // The AI can't author a background image — keep the current draft's image.
   if (draft.material?.image && !theme.material?.image) {
     theme.material = {
@@ -291,11 +366,8 @@ function onAiLoad(): void {
   // Never let an AI result shadow a built-in id.
   if (getBuiltin(theme.id)) theme.id = genId();
   loadDraft(theme);
-  status(
-    result.warnings.length
-      ? `Loaded with warnings: ${result.warnings.join('; ')}`
-      : 'Loaded ✓ — review the preview + contrast, then Save.',
-  );
+  closeAiModal();
+  status('Loaded from AI — review the preview + contrast, then Save.');
 }
 
 // --- Background image ------------------------------------------------------
@@ -554,13 +626,8 @@ async function init(): Promise<void> {
   populateSelect(start.id);
   loadDraft(start);
 
-  // ?ai=1 (from the popup's "Create with AI") → surface the AI panel + brief.
-  if (params.get('ai') === '1') {
-    setAiMode('create');
-    const brief = $<HTMLTextAreaElement>('ai-brief');
-    brief.scrollIntoView({ block: 'center' });
-    brief.focus();
-  }
+  // ?ai=1 deep-link → open the Create-with-AI modal straight away.
+  if (params.get('ai') === '1') openAiModal();
 }
 
 function status(msg: string): void {

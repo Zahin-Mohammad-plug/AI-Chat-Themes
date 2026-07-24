@@ -94,20 +94,15 @@ function renderGallery(host: HostId, settings: Settings): void {
 async function init(): Promise<void> {
   const host = await getActiveHost();
 
-  // Open the theme editor (deep-linking the current host's active theme; the AI
-  // entry also opens the "Design with AI" panel).
-  const openEditor = async (ai: boolean): Promise<void> => {
-    const params = new URLSearchParams();
+  // Open the theme editor (deep-linking the current host's active theme if any).
+  $('open-editor').addEventListener('click', async () => {
+    let url = chrome.runtime.getURL('editor.html');
     if (host) {
       const s = await getSettings();
-      params.set('theme', s.hosts[host].themeId);
+      url += `?theme=${encodeURIComponent(s.hosts[host].themeId)}`;
     }
-    if (ai) params.set('ai', '1');
-    const q = params.toString();
-    await chrome.tabs.create({ url: chrome.runtime.getURL('editor.html') + (q ? `?${q}` : '') });
-  };
-  $('create-ai').addEventListener('click', () => void openEditor(true));
-  $('edit-manual').addEventListener('click', () => void openEditor(false));
+    await chrome.tabs.create({ url });
+  });
 
   // No supported host in the active tab: keep the "ChatGPT & Claude" brand,
   // hide the per-site switch + gallery, show the prompt.

@@ -469,3 +469,25 @@ bump, no new permissions (deliberately simpler than a keyed assets map / v3).
 
 Version 0.1.5 → 0.1.6. Gate: compile clean, tests 136/136 (+10: ai-prompt 4, image
 2, schema image cases 4), lint clean, build ok.
+
+## 2026-07-24 — Rework "Create with AI" into a 4-step modal wizard
+
+Per feedback, moved the AI flow off the popup (back to a single quiet "Create or
+edit themes" button) and onto the editor as a proper wizard.
+
+- **Editor header, top-right:** a single "✨ Create with AI" button opens a modal.
+- **4-step modal:** (1) Edit current theme [name] / Create new · (2) describe the
+  changes (optional) · (3) Copy prompt (button flips to "Copied ✓"; clipboard-
+  blocked fallback reveals an editable prompt box) + "Paste in: Claude.ai / ChatGPT"
+  buttons that open each host · (4) paste the result — live lenient parse shows the
+  detected theme name + validity (fixes trailing commas, extracts one fenced/raw
+  block) and Apply loads an unsaved preview to review + Save.
+- **Prompt (`ai-prompt.ts`) reworked:** ends with a `User wants the following
+  changes:` block (the user's description, or left open to type in the chat); tells
+  the AI to **ask 1–3 clarifying questions** when the request is vague; and handles
+  background-image intent gracefully — never embed image data; use a gradient or
+  tell the user to upload the image in the editor. Review CTA moved into the
+  "when you're done" body line (still AI-delivered, non-nagging).
+
+Gate: compile clean, tests 137/137, lint clean, chrome build+zip. Still v0.1.6
+(unsubmitted iteration).

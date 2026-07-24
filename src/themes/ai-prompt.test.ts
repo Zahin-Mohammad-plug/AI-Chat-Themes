@@ -16,8 +16,8 @@ function firstJsonBlock(prompt: string): string {
 }
 
 describe('buildDesignPrompt', () => {
-  it('includes token names, both links, and the strict rules', () => {
-    const p = buildDesignPrompt({ theme: dark, mode: 'refine' });
+  it('includes token names, both links, rules, and image guidance', () => {
+    const p = buildDesignPrompt({ theme: dark, mode: 'edit' });
     expect(p).toContain('```json');
     expect(p).toContain('text.primary');
     expect(p).toContain('appGradient');
@@ -25,28 +25,36 @@ describe('buildDesignPrompt', () => {
     expect(p).toContain(SUPPORT_URL);
     expect(p).toMatch(/exactly one/i);
     expect(p).toMatch(/4\.5:1|WCAG AA/);
-    expect(p.toLowerCase()).toContain('url('); // it names url() in the prohibitions
+    expect(p.toLowerCase()).toContain('url(');
+    expect(p).toMatch(/ask me 1.3 quick questions/i); // clarifying-question behaviour
+    expect(p).toMatch(/background image/i); // image handling
+  });
+
+  it('ends with the "User wants the following changes:" block + the description', () => {
+    const p = buildDesignPrompt({ theme: dark, mode: 'edit', description: 'make it warmer' });
+    expect(p.trimEnd().endsWith('make it warmer')).toBe(true);
+    expect(p).toContain('User wants the following changes:');
+  });
+
+  it('leaves the changes block open when no description is given', () => {
+    const p = buildDesignPrompt({ theme: dark, mode: 'edit' });
+    expect(p.trimEnd().endsWith('User wants the following changes:')).toBe(true);
   });
 
   it('embeds a theme JSON that round-trips through parseImportedTheme', () => {
-    const p = buildDesignPrompt({ theme: dark, mode: 'refine' });
+    const p = buildDesignPrompt({ theme: dark, mode: 'create' });
     const { theme } = parseImportedTheme(firstJsonBlock(p));
     expect(theme).not.toBeNull();
     expect(theme!.tokens['bg.app']).toBe(dark.tokens['bg.app']);
   });
 
-  it('includes the brief in create mode', () => {
-    const p = buildDesignPrompt({ theme: dark, mode: 'create', brief: 'a calm ocean theme' });
-    expect(p).toContain('a calm ocean theme');
-  });
-
-  it('strips an embedded background image and notes it (keeps prompt small)', () => {
+  it('strips an embedded background image (keeps prompt small) and notes it', () => {
     const withImg: Theme = {
       ...dark,
       material: { image: 'data:image/png;base64,AAAABBBBCCCC', scrimOpacity: 0.8 },
     };
-    const p = buildDesignPrompt({ theme: withImg, mode: 'refine' });
+    const p = buildDesignPrompt({ theme: withImg, mode: 'edit' });
     expect(p).not.toContain('data:image/png;base64,AAAABBBBCCCC');
-    expect(p).toMatch(/custom background image/i);
+    expect(p).toMatch(/already uses a \*\*custom background image/i);
   });
 });

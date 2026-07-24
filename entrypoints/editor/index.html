@@ -12,6 +12,7 @@
       <div class="row gap">
         <select id="theme-select" aria-label="Load a theme to edit"></select>
         <button id="new-btn" type="button">New</button>
+        <button id="ai-open" type="button" class="primary">✨ Create with AI</button>
       </div>
     </header>
 
@@ -21,35 +22,6 @@
         <p id="builtin-note" class="note hidden">
           Editing a built-in — saving creates an editable copy.
         </p>
-
-        <fieldset class="group ai-group">
-          <legend>✨ Design with AI</legend>
-          <div class="seg" role="group" aria-label="AI mode">
-            <button type="button" id="ai-mode-refine" class="seg-btn active">Refine current</button>
-            <button type="button" id="ai-mode-create" class="seg-btn">Create new</button>
-          </div>
-          <div class="field">
-            <label for="ai-brief">Describe the look (optional)</label>
-            <textarea id="ai-brief" rows="2" placeholder="e.g. calm ocean · high-contrast · warm paper"></textarea>
-          </div>
-          <div class="row gap">
-            <select id="ai-dest" aria-label="Design in">
-              <option value="chatgpt">ChatGPT</option>
-              <option value="claude">Claude</option>
-            </select>
-            <button type="button" id="ai-copy-open" class="primary grow">Copy prompt &amp; open</button>
-          </div>
-          <p class="hint" id="ai-copy-status" aria-live="polite">
-            Copies a design prompt, then opens your assistant. Paste it there, then bring the JSON
-            result back below.
-          </p>
-          <textarea id="ai-prompt-out" class="hidden" readonly rows="4" aria-label="Prompt to copy"></textarea>
-          <div class="field">
-            <label for="ai-paste">Paste the AI's theme JSON</label>
-            <textarea id="ai-paste" rows="3" placeholder="Paste the AI's ```json block here"></textarea>
-          </div>
-          <button type="button" id="ai-load">Load result</button>
-        </fieldset>
 
         <div class="field">
           <label for="name-input">Name</label>
@@ -177,6 +149,70 @@
         </footer>
       </section>
     </main>
+
+    <!-- Create with AI — 4-step wizard modal -->
+    <div id="ai-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-label="Create with AI">
+      <div class="modal">
+        <header class="modal-hdr">
+          <div class="modal-title">✨ Create with AI</div>
+          <div class="modal-steps" id="ai-steps">
+            <span class="dot active"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          </div>
+          <button id="ai-close" class="modal-x" type="button" aria-label="Close">×</button>
+        </header>
+
+        <div class="modal-body">
+          <section class="step active" data-step="1">
+            <h3>What do you want to do?</h3>
+            <div class="choice-grid">
+              <button type="button" class="choice active" id="ai-mode-edit">
+                <span class="choice-t">Edit current theme</span>
+                <span class="choice-s" id="ai-current-name">—</span>
+              </button>
+              <button type="button" class="choice" id="ai-mode-create">
+                <span class="choice-t">Create a new theme</span>
+                <span class="choice-s">Start fresh from a description</span>
+              </button>
+            </div>
+          </section>
+
+          <section class="step" data-step="2">
+            <h3 id="ai-describe-h">Describe the changes</h3>
+            <textarea id="ai-describe" rows="4"
+              placeholder="e.g. warm sunset tones · softer contrast · a subtle blue gradient behind everything"></textarea>
+            <p class="hint">
+              Optional — short or detailed both work, and you can add more in the chat after pasting.
+              The assistant will ask if it needs specifics.
+            </p>
+          </section>
+
+          <section class="step" data-step="3">
+            <h3>Copy the prompt &amp; paste it in</h3>
+            <button type="button" id="ai-copy" class="copy-btn primary">Copy prompt</button>
+            <textarea id="ai-prompt-out" class="hidden" rows="6" aria-label="Prompt text"></textarea>
+            <p class="hint">
+              Open a new chat, paste it, and send. It ends with your changes so you can tweak them there.
+            </p>
+            <div class="paste-in">
+              <span class="lbl">Paste in:</span>
+              <button type="button" id="ai-open-claude">Claude.ai</button>
+              <button type="button" id="ai-open-chatgpt">ChatGPT</button>
+            </div>
+          </section>
+
+          <section class="step" data-step="4">
+            <h3>Paste the result</h3>
+            <textarea id="ai-paste" rows="5" placeholder="Paste the assistant's json block here"></textarea>
+            <div id="ai-detect" class="detect"></div>
+          </section>
+        </div>
+
+        <footer class="modal-foot">
+          <button type="button" id="ai-back" class="hidden">Back</button>
+          <button type="button" id="ai-next" class="primary">Next</button>
+        </footer>
+      </div>
+    </div>
 
     <script type="module" src="./main.ts"></script>
   </body>
