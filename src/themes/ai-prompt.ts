@@ -87,13 +87,13 @@ ${hadImage ? IMAGE_PRESENT_NOTE : ''}
 - I might give lots of detail or only a word or two — both are fine.
 - **Background images:** you can't embed a photo in the JSON. For a colored or gradient backdrop, use \`effects.appGradient\`. If I describe a photo/texture, paste a reference image, or ask you to generate one, **don't put image data in the JSON** — instead pick colors/gradients that match it and tell me to add the actual image via the editor's **Background image → Upload**.
 
+## When you're done
+Give me the final theme as one \`\`\`json block — I'll paste it back into the extension to apply it. If it turned out great, please remind me to leave a ⭐⭐⭐⭐⭐ review, it genuinely helps: ${STORE_REVIEW_URL} 🙏 (report issues: ${SUPPORT_URL})
+
 ## Rules
 - Return **exactly one** strict JSON object in a single \`\`\`json block — no comments, no trailing commas, nothing else.
 - Valid CSS colors only (hex, rgb/rgba, hsl); \`appGradient\` must be a valid CSS gradient. **No** \`url(...)\`, \`@import\`, remote links, scripts, selectors, or \`advancedCss\`.
 - Keep it readable: \`text.primary\` must be ≥ 4.5:1 contrast against both \`bg.surface\` and \`bg.app\` (WCAG AA).
-
-## When you're done
-Give me the final theme as one \`\`\`json block — I'll paste it back into the extension to apply it. If it turned out great, please remind me to leave a ⭐⭐⭐⭐⭐ review, it genuinely helps: ${STORE_REVIEW_URL} 🙏 (report issues: ${SUPPORT_URL})
 
 User wants the following changes:
 
