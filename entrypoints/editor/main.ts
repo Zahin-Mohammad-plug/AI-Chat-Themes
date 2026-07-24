@@ -201,6 +201,9 @@ function bindControls(): void {
   $('ai-modal').addEventListener('click', (e) => {
     if (e.target === $('ai-modal')) closeAiModal();
   });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !$('ai-modal').classList.contains('hidden')) closeAiModal();
+  });
   $('ai-mode-edit').addEventListener('click', () => setAiMode('edit'));
   $('ai-mode-create').addEventListener('click', () => setAiMode('create'));
   $('ai-copy').addEventListener('click', onCopyPrompt);
