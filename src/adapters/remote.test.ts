@@ -52,6 +52,18 @@ describe('validateAdapterMap', () => {
     evil.hosts.claude.varScopes = ['.cds-root } body { display:none'];
     expect(validateAdapterMap(evil)).toBeNull();
 
+    // colorMode markers are set as attributes on <html>: only inert data-* names.
+    const handler = clone(BUNDLED_ADAPTER_MAP);
+    handler.hosts.claude.colorMode = { type: 'attribute', name: 'onclick', darkValue: 'x', lightValue: 'y' };
+    expect(validateAdapterMap(handler)).toBeNull();
+    const badAlso = clone(BUNDLED_ADAPTER_MAP);
+    badAlso.hosts.chatgpt.colorMode!.alsoAttribute = { name: 'style', darkValue: 'a', lightValue: 'b' };
+    expect(validateAdapterMap(badAlso)).toBeNull();
+    const badVal = clone(BUNDLED_ADAPTER_MAP);
+    badVal.hosts.chatgpt.colorMode!.alsoAttribute = { name: 'data-theme', darkValue: 'x" y', lightValue: 'b' };
+    expect(validateAdapterMap(badVal)).toBeNull();
+    expect(validateAdapterMap(clone(BUNDLED_ADAPTER_MAP))!.hosts.chatgpt.colorMode?.alsoAttribute?.name).toBe('data-theme');
+
     const badColor = clone(BUNDLED_ADAPTER_MAP);
     badColor.hosts.claude.colorVars = { '--cds-x': 'nope' as never };
     expect(validateAdapterMap(badColor)).toBeNull();

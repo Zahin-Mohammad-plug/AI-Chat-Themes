@@ -2,7 +2,7 @@
 
 **Name:** AI Chat Themes: Custom Themes & Dark Mode for ChatGPT and Claude
 **Type:** Chrome Extension (Manifest V3), Chromium-first, Firefox-portable
-**Status:** v1.1 — **M1–M3 implemented and shipped** (palette + expressive themes, live creator, import/export, resilience pipeline). Latest release: **v0.1.7** (Nov 2026 host-redesign fix, submitted for store review 2026-11-23). M4 hosted store deferred. Opt-in telemetry is built but **disabled (no data-collection UI)** for the current Chrome Web Store submission.
+**Status:** v1.1 — **M1–M3 implemented and shipped** (palette + expressive themes, live creator, import/export, resilience pipeline). Latest release: **v0.1.8** (Nov 2026 host-redesign fixes; v0.1.7 published 2026-11-23, v0.1.8 follow-up). M4 hosted store deferred. Opt-in telemetry is built but **disabled (no data-collection UI)** for the current Chrome Web Store submission.
 **Owner:** Zahin
 **Audience:** Coding agents + reviewing engineer
 
@@ -154,6 +154,14 @@ adapter schema supports this without new engine code:
 ChatGPT's composer and send button moved to `--color-*` / composer-scoped vars. Every anchor still
 resolved and the legacy vars still existed, so **the health check (§5.4) reported healthy while the
 theme reached only the page background**. Detected via a user review, not telemetry.
+
+**Follow-up found after v0.1.7 shipped (fixed in v0.1.8).** ChatGPT's new token layer reads the
+mode from `data-theme` on `<html>`, while its Tailwind layer reads the `dark` class. We only set the
+class, so with a dark theme on a light-OS machine the new layer stayed light — e.g. sidebar chat
+titles rendered `#0d0d0d` on a dark sidebar. `colorMode.alsoAttribute` now sets a second marker
+alongside the primary one (captured and restored on toggle-off). Remote maps may only name inert
+`data-*` attributes with `[\w-]` values for these markers. Also: `accentGlow` no longer applies to
+links inside `nav`/`aside` (it smeared every chat title).
 
 **[ADAPT] Follow-up — token-coverage check.** Extend the health check beyond "anchor resolved" to
 "theme actually painted": after applying, sample the computed background/text color of a few

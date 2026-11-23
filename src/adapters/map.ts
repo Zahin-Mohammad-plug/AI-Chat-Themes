@@ -14,7 +14,12 @@ const chatgpt: HostAdapter = {
   signals: { cssVars: ['--main-surface-primary'] },
   // ChatGPT toggles a `dark` class on <html>; its Tailwind `dark:` utilities
   // (modals, menus, settings) follow it, so we must match it to the theme base.
-  colorMode: { type: 'class', name: 'dark' },
+  // Its newer `--color-*` token layer reads `data-theme` instead, so both are set.
+  colorMode: {
+    type: 'class',
+    name: 'dark',
+    alsoAttribute: { name: 'data-theme', darkValue: 'dark', lightValue: 'light' },
+  },
   // Tier 1: ChatGPT exposes plain-color CSS custom properties.
   tokenVars: {
     '--bg-primary': 'bg.app',

@@ -36,9 +36,24 @@ export interface AnchorRule {
  * `dark:` utilities in modals/menus) fight a mismatched theme. Hosts differ:
  * ChatGPT toggles a class, Claude toggles an attribute.
  */
-export type ColorModeSpec =
+export interface ColorModeAttribute {
+  name: string;
+  darkValue: string;
+  lightValue: string;
+}
+
+export type ColorModeSpec = (
   | { type: 'class'; name: string; scopes?: string[] }
-  | { type: 'attribute'; name: string; darkValue: string; lightValue: string; scopes?: string[] };
+  | ({ type: 'attribute'; scopes?: string[] } & ColorModeAttribute)
+) & {
+  /**
+   * A second marker on <html> the host ALSO reads (set alongside the primary
+   * one). ChatGPT toggles a `dark` class for its Tailwind layer but its newer
+   * token layer keys off `data-theme` — miss either and half the UI renders in
+   * the other scheme (e.g. near-black sidebar text on a dark theme).
+   */
+  alsoAttribute?: ColorModeAttribute;
+};
 //
 // `scopes` are extra selectors whose elements ALSO carry the mode marker. Some
 // hosts nest an independent design-system scope (e.g. Claude's `.cds-root`,

@@ -533,3 +533,21 @@ Diagnosed live on both hosts:
   notes) and a §16 edge case. Key lesson: the health check stayed green because every anchor still
   resolved — proposed follow-up is a token-coverage check that verifies landmark surfaces actually
   paint with the theme's colors.
+
+## 2026-11-23 — v0.1.8: ChatGPT `data-theme` mode sync, nav-safe glow
+
+Reported after v0.1.7 went live: on ChatGPT, sidebar chat titles were near-black/red-smeared on a
+dark custom theme.
+
+- Root cause (verified live): ChatGPT's newer `--color-*` layer takes its light/dark values from
+  `data-theme` on `<html>`; we only toggled the `dark` class. On a light-OS machine `data-theme`
+  stayed `light`, so `--color-text-emphasis` resolved to `#0d0d0d`. Not caused by our token
+  overrides — reproduced with our stylesheet disabled; setting `data-theme="dark"` alone fixed it,
+  and ChatGPT doesn't revert it.
+- Adapter: `colorMode.alsoAttribute` (ChatGPT: `data-theme` dark/light) — set with the primary
+  marker, snapshotted and restored on toggle-off.
+- Security hardening: remote `colorMode` is now fully validated — class names `[\w-]+`, attribute
+  markers must be `data-*` with `[\w-]+` values (a map could previously have set e.g. `onclick` on
+  `<html>`), scopes can't contain `{ } ;`.
+- `accentGlow`: suppressed inside `nav`/`aside`/`[role="navigation"]` so history lists stay crisp.
+- Popup note: the "Color themes" grid is below the fold (the gallery scrolls); not a bug.

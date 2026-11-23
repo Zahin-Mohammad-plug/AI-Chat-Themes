@@ -174,6 +174,11 @@ function buildExpressiveCss(theme: Theme): string[] {
   // (shadow only), bounded, and conservatively scoped to avoid host breakage.
   if (theme.effects?.accentGlow) {
     out.push(`a, a * {\n  text-shadow: ${theme.effects.accentGlow} !important;\n}`);
+    // Navigation lists (chat history) are links too — glowing every title
+    // smears the sidebar, so keep the glow to links in the conversation.
+    out.push(
+      `:is(nav, aside, [role="navigation"]) :is(a, a *) {\n  text-shadow: none !important;\n}`,
+    );
   }
 
   return out;
@@ -193,6 +198,7 @@ function upsertStyle(id: string, css: string, doc: Document): void {
 export interface ColorModeSnapshot {
   hadClass?: boolean;
   attrValue?: string | null;
+  alsoAttrValue?: string | null;
   colorScheme: string;
 }
 
@@ -203,6 +209,7 @@ export function captureColorMode(adapter: HostAdapter, doc: Document = document)
   const m = adapter.colorMode;
   if (m?.type === 'class') snap.hadClass = de.classList.contains(m.name);
   else if (m?.type === 'attribute') snap.attrValue = de.getAttribute(m.name);
+  if (m?.alsoAttribute) snap.alsoAttrValue = de.getAttribute(m.alsoAttribute.name);
   return snap;
 }
 
@@ -232,6 +239,10 @@ export function applyColorMode(
   if (!m) return;
   const wantDark = base !== 'light';
   setMode(doc.documentElement, m, wantDark);
+  if (m.alsoAttribute) {
+    const a = m.alsoAttribute;
+    doc.documentElement.setAttribute(a.name, wantDark ? a.darkValue : a.lightValue);
+  }
   doc.documentElement.style.colorScheme = wantDark ? 'dark' : 'light';
   for (const sel of m.scopes ?? []) {
     doc.querySelectorAll(sel).forEach((el) => setMode(el, m, wantDark));
@@ -250,6 +261,10 @@ export function restoreColorMode(
   else if (m?.type === 'attribute' && snap.attrValue !== undefined) {
     if (snap.attrValue === null) de.removeAttribute(m.name);
     else de.setAttribute(m.name, snap.attrValue);
+  }
+  if (m?.alsoAttribute && snap.alsoAttrValue !== undefined) {
+    if (snap.alsoAttrValue === null) de.removeAttribute(m.alsoAttribute.name);
+    else de.setAttribute(m.alsoAttribute.name, snap.alsoAttrValue);
   }
   de.style.colorScheme = snap.colorScheme;
   // Scope markers were ours; the host manages those elements natively, so clear.

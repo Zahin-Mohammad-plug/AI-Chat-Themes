@@ -12,6 +12,8 @@ import { BUNDLED_ADAPTER_MAP } from './map';
 import type {
   AdapterMap,
   AnchorRule,
+  ColorModeAttribute,
+  ColorModeSpec,
   FingerprintSignals,
   HostAdapter,
   TokenFormat,
@@ -58,6 +60,43 @@ function validSignals(v: unknown): FingerprintSignals | undefined {
   return Object.keys(out).length ? out : undefined;
 }
 
+const SAFE_TOKEN = /^[\w-]+$/;
+// Attributes the engine sets on host elements must be inert `data-*` markers —
+// an untrusted map must never be able to set e.g. `onclick` or `style`.
+const SAFE_ATTR = /^data-[\w-]+$/;
+
+function validModeAttr(v: unknown): ColorModeAttribute | null {
+  if (!isObj(v) || !isStr(v.name) || !isStr(v.darkValue) || !isStr(v.lightValue)) return null;
+  if (!SAFE_ATTR.test(v.name) || !SAFE_TOKEN.test(v.darkValue) || !SAFE_TOKEN.test(v.lightValue))
+    return null;
+  return { name: v.name, darkValue: v.darkValue, lightValue: v.lightValue };
+}
+
+function validColorMode(v: unknown): ColorModeSpec | null {
+  if (!isObj(v)) return null;
+  let scopes: string[] | undefined;
+  if (v.scopes !== undefined) {
+    if (!Array.isArray(v.scopes) || !v.scopes.every((x) => isStr(x) && !/[{};]/.test(x))) return null;
+    scopes = v.scopes as string[];
+  }
+  let mode: ColorModeSpec;
+  if (v.type === 'class') {
+    if (!isStr(v.name) || !SAFE_TOKEN.test(v.name)) return null;
+    mode = { type: 'class', name: v.name };
+  } else if (v.type === 'attribute') {
+    const a = validModeAttr(v);
+    if (!a) return null;
+    mode = { type: 'attribute', ...a };
+  } else return null;
+  if (scopes) mode.scopes = scopes;
+  if (v.alsoAttribute !== undefined) {
+    const also = validModeAttr(v.alsoAttribute);
+    if (!also) return null;
+    mode.alsoAttribute = also;
+  }
+  return mode;
+}
+
 /** Validate one host adapter. Returns a cleaned adapter or null. */
 export function validateHostAdapter(v: unknown): HostAdapter | null {
   if (!isObj(v)) return null;
@@ -94,9 +133,10 @@ export function validateHostAdapter(v: unknown): HostAdapter | null {
   const signals = validSignals(v.signals);
   if (signals) adapter.signals = signals;
   if (typeof v.codeFollowsOsScheme === 'boolean') adapter.codeFollowsOsScheme = v.codeFollowsOsScheme;
-  // colorMode is passed through loosely (shape-checked) — it's host-defined data.
-  if (isObj(v.colorMode) && (v.colorMode.type === 'class' || v.colorMode.type === 'attribute')) {
-    adapter.colorMode = v.colorMode as HostAdapter['colorMode'];
+  if (v.colorMode !== undefined) {
+    const mode = validColorMode(v.colorMode);
+    if (!mode) return null;
+    adapter.colorMode = mode;
   }
   return adapter;
 }

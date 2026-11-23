@@ -90,6 +90,36 @@ describe('applyColorMode — ChatGPT (class mechanism)', () => {
   });
 });
 
+describe('applyColorMode — ChatGPT data-theme (Nov 2026 token layer)', () => {
+  const adapter = BUNDLED_ADAPTER_MAP.hosts.chatgpt;
+
+  it('a dark theme on a light-OS ChatGPT also flips data-theme (else sidebar text renders near-black)', () => {
+    const f = fakeDoc('light', { 'data-theme': 'light' });
+    applyColorMode('dark', adapter, f.doc);
+    expect(f.classes.has('dark')).toBe(true);
+    expect(f.attrs['data-theme']).toBe('dark');
+  });
+
+  it('a light theme sets data-theme=light, and toggle-off restores the original', () => {
+    const f = fakeDoc('dark', { 'data-theme': 'dark' });
+    const snap = captureColorMode(adapter, f.doc);
+    applyColorMode('light', adapter, f.doc);
+    expect(f.attrs['data-theme']).toBe('light');
+    restoreColorMode(adapter, snap, f.doc);
+    expect(f.attrs['data-theme']).toBe('dark');
+    expect(f.classes.has('dark')).toBe(true);
+  });
+});
+
+describe('accent glow', () => {
+  it('glows content links but never the navigation lists', () => {
+    const glow: Theme = { ...dark, effects: { accentGlow: '0 0 6px rgba(255,0,0,0.5)' } };
+    const css = buildThemeCss(glow, BUNDLED_ADAPTER_MAP.hosts.chatgpt);
+    expect(css).toContain('a, a * {\n  text-shadow: 0 0 6px rgba(255,0,0,0.5) !important;');
+    expect(css).toContain(':is(nav, aside, [role="navigation"]) :is(a, a *) {\n  text-shadow: none !important;');
+  });
+});
+
 describe('applyColorMode — Claude (attribute mechanism)', () => {
   const adapter = BUNDLED_ADAPTER_MAP.hosts.claude;
 
