@@ -42,6 +42,20 @@ describe('validateAdapterMap', () => {
     badSel.hosts.chatgpt.anchors[0]!.selector = 42 as never;
     expect(validateAdapterMap(badSel)).toBeNull();
   });
+
+  it('keeps colorVars/varScopes, and rejects scopes that could escape the rule block', () => {
+    const map = validateAdapterMap(clone(BUNDLED_ADAPTER_MAP))!;
+    expect(map.hosts.claude.colorVars?.['--cds-surface-1']).toBe('bg.app');
+    expect(map.hosts.claude.varScopes).toEqual(['.cds-root']);
+
+    const evil = clone(BUNDLED_ADAPTER_MAP);
+    evil.hosts.claude.varScopes = ['.cds-root } body { display:none'];
+    expect(validateAdapterMap(evil)).toBeNull();
+
+    const badColor = clone(BUNDLED_ADAPTER_MAP);
+    badColor.hosts.claude.colorVars = { '--cds-x': 'nope' as never };
+    expect(validateAdapterMap(badColor)).toBeNull();
+  });
 });
 
 describe('selectActiveMap (version gate + fallback)', () => {

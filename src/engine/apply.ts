@@ -43,12 +43,20 @@ export function buildThemeCss(theme: Theme, adapter: HostAdapter): string {
     const value = resolveTokenValue(t, tokenKey, adapter.tokenFormat);
     varLines.push(`  ${cssVar}: ${value} !important;`);
   }
+  // Plain-color vars (a host's second design-token set, if any).
+  for (const [cssVar, tokenKey] of Object.entries(adapter.colorVars ?? {})) {
+    if (!tokenKey) continue;
+    varLines.push(`  ${cssVar}: ${t[tokenKey]} !important;`);
+  }
   // Also publish our own namespaced vars for anchor rules / debugging.
   for (const [k, v] of Object.entries(t)) {
     varLines.push(`  --act-${k.replace(/\./g, '-')}: ${v};`);
   }
   if (varLines.length) {
-    blocks.push(`:root, html, body {\n${varLines.join('\n')}\n}`);
+    // Also emit on any nested scopes that re-declare the host tokens, or the
+    // inherited :root override would be shadowed inside them.
+    const scopes = [':root', 'html', 'body', ...(adapter.varScopes ?? [])];
+    blocks.push(`${scopes.join(', ')} {\n${varLines.join('\n')}\n}`);
   }
 
   // (2) Tier 2-3: semantic-anchor rules.

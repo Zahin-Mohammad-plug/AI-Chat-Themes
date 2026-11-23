@@ -502,3 +502,23 @@ Gate: compile clean, tests 137/137, lint clean, chrome build+zip. Still v0.1.6
 - Editor step 4: non-blocking amber heads-up when a pasted theme's gradient is near-flat
   (`isSubtleGradient`, CIE76 ΔE < 12 across stops; built-ins all pass).
 - Step 3 hint: Claude shows long pastes as an attachment — expected; extra changes go in the box.
+
+## 2026-11-23 — v0.1.7: adapt to the Nov 2026 Claude + ChatGPT redesigns
+
+Triggered by a store review: custom themes (e.g. Nord) stopped applying on Claude after its UI update.
+Diagnosed live on both hosts:
+
+- **Claude** moved most UI onto its "cds" design system: plain-color `--cds-*` tokens declared on
+  `.cds-root` (html + nested scopes). Our HSL-triple `--bg-*`/`--text-*` overrides still applied but
+  no longer drove the sidebar, composer, cards, text or buttons; `--accent-main-*`/`--accent-secondary-*`
+  were removed (now `--accent-000/100/200`, `--accent-brand`). Added a `--cds-*` mapping (surfaces,
+  sidebar, popover, text, accent fill + on-accent, user bubble, borders) and kept the legacy set.
+- **ChatGPT** added a `--color-*` token layer; the composer re-declares its fill on its own root
+  (with a hard-coded dark variant). Mapped `--color-surface*`/`--color-text*`/accent/border, the
+  composer fill vars and the send-button vars.
+- Engine: adapters gain `colorVars` (plain-color vars regardless of `tokenFormat`) and `varScopes`
+  (extra selectors that re-declare tokens — `.cds-root`, `[data-theme]`,
+  `[data-composer-surface-variant]`, all durable hooks, no hashed classes). Remote maps are validated
+  for both, var names must match `--[\w-]+`, and scopes may not contain `{ } ;`.
+- Verified live by injecting the generated CSS: Nord (dark) and a paper (light) palette on Claude's new
+  home + chat views; Nord on ChatGPT home/composer/sidebar. Regression tests added.

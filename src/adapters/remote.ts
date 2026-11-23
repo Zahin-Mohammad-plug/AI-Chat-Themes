@@ -29,6 +29,8 @@ function validTokenMap(v: unknown): Partial<Record<string, TokenKey>> | null {
   if (!isObj(v)) return null;
   const out: Record<string, TokenKey> = {};
   for (const [k, val] of Object.entries(v)) {
+    // Keys become CSS custom-property names verbatim — allow only `--name`.
+    if (!/^--[\w-]+$/.test(k)) return null;
     if (!isStr(val) || !TOKEN_SET.has(val)) return null;
     out[k] = val as TokenKey;
   }
@@ -78,6 +80,17 @@ export function validateHostAdapter(v: unknown): HostAdapter | null {
     tokenVars,
     anchors,
   };
+  if (v.colorVars !== undefined) {
+    const colorVars = validTokenMap(v.colorVars);
+    if (!colorVars) return null;
+    adapter.colorVars = colorVars;
+  }
+  if (v.varScopes !== undefined) {
+    // Selectors only — a `{`/`}`/`;` would let a map break out of the rule block.
+    if (!Array.isArray(v.varScopes) || !v.varScopes.every((x) => isStr(x) && !/[{};]/.test(x)))
+      return null;
+    adapter.varScopes = v.varScopes as string[];
+  }
   const signals = validSignals(v.signals);
   if (signals) adapter.signals = signals;
   if (typeof v.codeFollowsOsScheme === 'boolean') adapter.codeFollowsOsScheme = v.codeFollowsOsScheme;

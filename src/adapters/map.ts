@@ -40,7 +40,32 @@ const chatgpt: HostAdapter = {
     '--border-default': 'border.hairline',
     '--link': 'accent',
     '--link-hover': 'accent',
+    // Nov 2026: ChatGPT's newer `--color-*` token layer (declared on
+    // `:where(:root, [data-theme])`) now drives the composer, cards and the
+    // send button. Plain colors, so they live alongside the legacy vars above.
+    '--color-surface': 'bg.app',
+    '--color-surface-secondary': 'bg.surface',
+    '--color-surface-tertiary': 'bg.elevated',
+    '--color-surface-elevated': 'bg.elevated',
+    '--color-surface-elevated-secondary': 'composer.bg',
+    '--color-surface-card': 'bg.surface',
+    '--color-text': 'text.primary',
+    '--color-text-primary': 'text.primary',
+    '--color-text-secondary': 'text.secondary',
+    '--color-text-tertiary': 'text.tertiary',
+    '--color-accent': 'accent',
+    '--color-border': 'border.hairline',
+    '--color-background-composer-primary': 'accent',
+    '--color-text-composer-primary': 'accent.text',
+    // The composer re-declares its fill on its own root (incl. a hard-coded
+    // dark variant), so these are also emitted on that scope (see varScopes).
+    '--composer-background-color': 'composer.bg',
+    '--composer-layout-surface-background': 'composer.bg',
+    '--composer-layout-surface-fill': 'composer.bg',
   },
+  // Durable data-attribute hooks (not hashed class names) for scopes that
+  // re-declare tokens: themed subtrees and the composer root.
+  varScopes: ['[data-theme]', '[data-composer-surface-variant]'],
   // Tier 2-3: semantic anchors covering surfaces the tokens may miss.
   anchors: [
     {
@@ -126,12 +151,45 @@ const claude: HostAdapter = {
     '--border-100': 'border.hairline',
     '--border-200': 'border.hairline',
     '--border-300': 'border.hairline',
+    // Accent: the pre-Nov-2026 names, then their replacements (both kept so
+    // either shape of the host themes correctly).
     '--accent-main-000': 'accent',
     '--accent-main-100': 'accent',
     '--accent-main-200': 'accent',
     '--accent-secondary-000': 'accent',
     '--accent-secondary-100': 'accent',
+    '--accent-000': 'accent',
+    '--accent-100': 'accent',
+    '--accent-200': 'accent',
+    '--accent-brand': 'accent',
   },
+  // Nov 2026: Claude moved most UI onto its "cds" design system, whose tokens
+  // are PLAIN colors declared on `.cds-root` (incl. nested scopes). Without
+  // these, only the page background themed and everything else stayed native.
+  colorVars: {
+    '--cds-page-bg': 'bg.app',
+    '--cds-surface-0': 'bg.app',
+    '--cds-surface-1': 'bg.app',
+    '--cds-surface-2': 'bg.surface',
+    '--cds-surface-3': 'bg.surface',
+    '--cds-surface-panel': 'bg.surface',
+    '--cds-surface-sidebar': 'sidebar.bg',
+    '--cds-surface-popover': 'bg.elevated',
+    '--cds-text-primary': 'text.primary',
+    '--cds-text-secondary': 'text.secondary',
+    '--cds-text-stays-secondary': 'text.secondary',
+    '--cds-text-muted': 'text.tertiary',
+    '--cds-text-accent': 'accent',
+    '--cds-text-link-color': 'accent',
+    '--cds-fill-accent': 'accent',
+    '--cds-fill-accent-hover': 'accent',
+    '--cds-on-accent': 'accent.text',
+    '--cds-bg-user-message': 'bg.surface',
+    '--cds-border': 'border.hairline',
+    '--cds-border-line': 'border.hairline',
+    '--cds-border-line-muted': 'border.hairline',
+  },
+  varScopes: ['.cds-root'],
   anchors: [
     {
       id: 'app.shell',

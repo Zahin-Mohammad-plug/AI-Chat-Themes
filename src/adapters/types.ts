@@ -81,6 +81,19 @@ export interface HostAdapter {
    * durable). Overriding these cascades automatically through the host.
    */
   tokenVars: Partial<Record<string, TokenKey>>;
+  /**
+   * Extra host custom properties that take PLAIN colors (`--x: #rrggbb`)
+   * regardless of `tokenFormat`. Lets one adapter target a host mid-migration
+   * between two design systems (e.g. Claude's legacy HSL-triple `--bg-000` set
+   * plus its newer plain-color `--cds-*` set).
+   */
+  colorVars?: Partial<Record<string, TokenKey>>;
+  /**
+   * Extra selectors whose elements RE-DECLARE the host's tokens (e.g. Claude's
+   * nested `.cds-root` scopes). Overrides set only on :root would be shadowed
+   * there, so the engine emits the variable block on these selectors too.
+   */
+  varScopes?: string[];
   /** Tier 2-3 semantic anchors for surfaces tokens don't fully cover. */
   anchors: AnchorRule[];
 }

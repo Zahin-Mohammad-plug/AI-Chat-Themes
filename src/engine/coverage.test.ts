@@ -33,9 +33,13 @@ describe('theme x host CSS matrix', () => {
           const rootBlock = css.slice(css.indexOf(':root'), css.indexOf('}'));
           const lines = rootBlock.match(/^ {2}--[\w-]+: [^;]+ !important;$/gm) ?? [];
           expect(lines.length).toBeGreaterThan(0);
+          const colorVars = BUNDLED_ADAPTER_MAP.hosts.claude.colorVars ?? {};
           for (const line of lines) {
+            const name = line.trim().split(':')[0]!;
             const value = line.replace(/^ {2}--[\w-]+: /, '').replace(/ !important;$/, '');
-            expect(value, line).toMatch(TRIPLE);
+            // The newer `--cds-*` set takes plain colors; the legacy set takes triples.
+            if (name in colorVars) expect(value, line).not.toMatch(TRIPLE);
+            else expect(value, line).toMatch(TRIPLE);
           }
         });
       }
@@ -69,4 +73,25 @@ describe('light AND dark/amoled bases all render cleanly', () => {
       });
     }
   }
+});
+
+describe('Nov 2026 host redesigns stay covered', () => {
+  const theme = BUILTIN_THEMES[0]!;
+  it('Claude: themes the new plain-color `--cds-*` tokens, incl. nested .cds-root scopes', () => {
+    const css = buildThemeCss(theme, BUNDLED_ADAPTER_MAP.hosts.claude);
+    const head = css.slice(0, css.indexOf('{'));
+    expect(head).toContain('.cds-root');
+    expect(css).toContain(`--cds-surface-1: ${theme.tokens['bg.app']} !important;`);
+    expect(css).toContain(`--cds-surface-sidebar: ${theme.tokens['sidebar.bg']} !important;`);
+    expect(css).toContain(`--cds-text-primary: ${theme.tokens['text.primary']} !important;`);
+    expect(css).toContain(`--cds-on-accent: ${theme.tokens['accent.text']} !important;`);
+    expect(css).toMatch(/--accent-brand: [\d.]+ [\d.]+% [\d.]+% !important;/);
+  });
+  it('ChatGPT: themes the `--color-*` layer and the composer root scope', () => {
+    const css = buildThemeCss(theme, BUNDLED_ADAPTER_MAP.hosts.chatgpt);
+    const head = css.slice(0, css.indexOf('{'));
+    expect(head).toContain('[data-composer-surface-variant]');
+    expect(css).toContain(`--composer-layout-surface-background: ${theme.tokens['composer.bg']} !important;`);
+    expect(css).toContain(`--color-background-composer-primary: ${theme.tokens.accent} !important;`);
+  });
 });
