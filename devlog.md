@@ -522,3 +522,14 @@ Diagnosed live on both hosts:
   for both, var names must match `--[\w-]+`, and scopes may not contain `{ } ;`.
 - Verified live by injecting the generated CSS: Nord (dark) and a paper (light) palette on Claude's new
   home + chat views; Nord on ChatGPT home/composer/sidebar. Regression tests added.
+
+## 2026-11-23 — v0.1.7 submitted; review answered; PRD updated
+
+- v0.1.7 (`a10e575`) uploaded and submitted for Chrome Web Store review by the owner (the dashboard
+  can't be driven by extensions, so uploads are manual unless CWS API credentials are provided).
+- Replied to the 1★ review that reported the Claude breakage: fix is shipped and arrives
+  automatically once Chrome approves the update; existing custom themes work as-is.
+- PRD: status → v0.1.7; new §5.6 (host design-system migrations: `colorVars`, `varScopes`, incident
+  notes) and a §16 edge case. Key lesson: the health check stayed green because every anchor still
+  resolved — proposed follow-up is a token-coverage check that verifies landmark surfaces actually
+  paint with the theme's colors.

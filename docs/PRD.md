@@ -2,7 +2,7 @@
 
 **Name:** AI Chat Themes: Custom Themes & Dark Mode for ChatGPT and Claude
 **Type:** Chrome Extension (Manifest V3), Chromium-first, Firefox-portable
-**Status:** v1.1 — **M1–M3 implemented and shipped** (palette + expressive themes, live creator, import/export, resilience pipeline). M4 hosted store deferred. Opt-in telemetry is built but **disabled (no data-collection UI)** for the current Chrome Web Store submission.
+**Status:** v1.1 — **M1–M3 implemented and shipped** (palette + expressive themes, live creator, import/export, resilience pipeline). Latest release: **v0.1.7** (Nov 2026 host-redesign fix, submitted for store review 2026-11-23). M4 hosted store deferred. Opt-in telemetry is built but **disabled (no data-collection UI)** for the current Chrome Web Store submission.
 **Owner:** Zahin
 **Audience:** Coding agents + reviewing engineer
 
@@ -13,6 +13,13 @@
 > and the telemetry opt-in is currently not exposed in the UI, so the shipped
 > package collects nothing. M4 (hosted store) is intentionally not built — local
 > file-based import/export covers the sharing need per §13.1.
+>
+> **Update (2026-11-23, v0.1.7):** both hosts shipped design-system migrations in
+> Nov 2026 (Claude → plain-color `--cds-*` tokens on `.cds-root`; ChatGPT → a
+> `--color-*` token layer + a composer that re-declares its own fill). A store
+> review reported custom themes no longer applying on Claude. Fixed by adding a
+> second, plain-color token set and re-declaring scopes to the adapter schema
+> (§5.6). See the incident notes in §5.6 for what the health check missed.
 
 ---
 
@@ -127,6 +134,32 @@ Design:
 
 ### 5.5 Host version fingerprinting [ADAPT]
 Detect which "shape" of the host the user is on, so the right selector set is chosen. Fingerprint from durable signals (presence of known tokens, DOM landmarks, build hints) rather than brittle ones. The adapter map can carry multiple selector sets keyed by fingerprint, allowing a single extension version to support several host versions at once during rollouts.
+
+### 5.6 Host design-system migrations [ADAPT]
+Hosts periodically move to a new design system while keeping parts of the old one alive. The
+adapter schema supports this without new engine code:
+
+- **`colorVars`** — a second token map whose values are emitted as plain colors regardless of the
+  adapter's `tokenFormat` (Claude's legacy set is HSL triples; its `--cds-*` set is plain colors).
+  Both sets are kept during a migration so either host shape themes correctly.
+- **`varScopes`** — extra selectors whose elements **re-declare** host tokens (Claude's nested
+  `.cds-root`, ChatGPT's `[data-theme]` and `[data-composer-surface-variant]`). Overrides placed only
+  on `:root` are shadowed there, so the engine emits the variable block on these scopes too. Scopes
+  must be durable hooks (classes from the design system, `data-*` attributes) — never hashed classes
+  (§5.2 tier 4).
+- Remote maps validate both: token values must be known keys, variable names must match `--[\w-]+`,
+  and scopes may not contain `{`, `}` or `;`.
+
+**Incident: Nov 2026 (v0.1.7).** Claude moved most UI to `--cds-*` and renamed its accent tokens;
+ChatGPT's composer and send button moved to `--color-*` / composer-scoped vars. Every anchor still
+resolved and the legacy vars still existed, so **the health check (§5.4) reported healthy while the
+theme reached only the page background**. Detected via a user review, not telemetry.
+
+**[ADAPT] Follow-up — token-coverage check.** Extend the health check beyond "anchor resolved" to
+"theme actually painted": after applying, sample the computed background/text color of a few
+landmark surfaces (main column, sidebar, composer) and flag when they don't match the theme's
+tokens. This catches silent token migrations like the one above. Structural-only, same privacy
+boundary as §5.4.
 
 ---
 
@@ -415,6 +448,7 @@ Options: free + donations (most competitors), freemium (premium theme packs / ad
 - Host A/B test serves two different DOMs to different users on the same day. (Adapter map keyed by fingerprint, Section 5.5.)
 - User logged into multiple host accounts / multiple tabs. Theme applies per host consistently across tabs.
 - Host ships a brand-new surface the extension has never seen. Engine ignores it safely; telemetry flags it; adapter map updated later.
+- Host migrates to a new design-token system while old tokens still exist (anchors resolve, theme silently stops reaching most surfaces). Map the new token set via `colorVars`/`varScopes` (§5.6); detect via the token-coverage follow-up.
 - Host's own dark/light setting conflicts with the theme. Define precedence: extension theme wins on themed surfaces, host setting governs untouched surfaces. Avoid fighting the host's `prefers-color-scheme` toggling.
 - Very long conversations and streaming responses (DOM mutating rapidly). Observer must not thrash.
 - Slow or failed remote fetch. Use bundled fallback silently.
