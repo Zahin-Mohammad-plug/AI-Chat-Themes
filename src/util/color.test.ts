@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { contrastRatio, parseColor, toHslTriple } from './color';
+import { contrastRatio, deltaE, isSubtleGradient, parseColor, toHslTriple } from './color';
+import { BUILTIN_THEMES } from '@/src/themes/builtins';
 
 describe('parseColor', () => {
   it('parses #rrggbb', () => expect(parseColor('#0e0e10')).toEqual({ r: 14, g: 14, b: 16 }));
@@ -22,4 +23,23 @@ describe('contrastRatio', () => {
     expect(contrastRatio('#ffffff', '#000000')).toBeCloseTo(21, 0);
   });
   it('same color is 1:1', () => expect(contrastRatio('#888888', '#888888')).toBeCloseTo(1, 5));
+});
+
+describe('gradient visibility', () => {
+  it('deltaE is 0 for identical colors and large for black/white', () => {
+    expect(deltaE({ r: 9, g: 9, b: 9 }, { r: 9, g: 9, b: 9 })).toBe(0);
+    expect(deltaE({ r: 0, g: 0, b: 0 }, { r: 255, g: 255, b: 255 })).toBeGreaterThan(99);
+  });
+  it('flags a near-flat gradient (the "Black Ops" case)', () => {
+    expect(isSubtleGradient('linear-gradient(135deg, #0a0e12, #131c26)')).toBe(true);
+  });
+  it('does not flag clearly visible gradients, incl. every built-in', () => {
+    expect(isSubtleGradient('linear-gradient(135deg, #0a0e12, #1d3a52)')).toBe(false);
+    for (const t of BUILTIN_THEMES) {
+      if (t.effects?.appGradient) expect(isSubtleGradient(t.effects.appGradient), t.id).toBe(false);
+    }
+  });
+  it('cannot judge (no warning) with < 2 parseable stops', () => {
+    expect(isSubtleGradient('linear-gradient(hsl(200 50% 10%), hsl(200 50% 12%))')).toBe(false);
+  });
 });

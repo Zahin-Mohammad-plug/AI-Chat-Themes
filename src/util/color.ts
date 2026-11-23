@@ -161,3 +161,48 @@ export function contrastRatio(a: string, b: string): number {
 }
 
 export const WCAG_AA_BODY = 4.5;
+
+/** sRGB → CIELAB (D65). */
+function rgbToLab({ r, g, b }: Rgb): [number, number, number] {
+  const lr = channelLuminance(r);
+  const lg = channelLuminance(g);
+  const lb = channelLuminance(b);
+  const x = (lr * 0.4124 + lg * 0.3576 + lb * 0.1805) / 0.95047;
+  const y = lr * 0.2126 + lg * 0.7152 + lb * 0.0722;
+  const z = (lr * 0.0193 + lg * 0.1192 + lb * 0.9505) / 1.08883;
+  const f = (t: number): number => (t > 216 / 24389 ? Math.cbrt(t) : (24389 / 27 * t + 16) / 116);
+  const fx = f(x);
+  const fy = f(y);
+  const fz = f(z);
+  return [116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)];
+}
+
+/** Perceptual color difference (CIE76 ΔE). ~2 = just noticeable; >20 = clearly different. */
+export function deltaE(a: Rgb, b: Rgb): number {
+  const [l1, a1, b1] = rgbToLab(a);
+  const [l2, a2, b2] = rgbToLab(b);
+  return Math.hypot(l1 - l2, a1 - a2, b1 - b2);
+}
+
+/** The hex / rgb() / rgba() color stops in a CSS gradient string (hsl stops are skipped). */
+export function gradientColors(css: string): Rgb[] {
+  const found = css.match(/#[0-9a-f]{3,8}\b|rgba?\([^)]*\)/gi) ?? [];
+  return found.map(parseColor).filter((c): c is Rgb => c !== null);
+}
+
+/** Below this max pairwise ΔE a full-screen gradient reads as a flat color. */
+export const SUBTLE_GRADIENT_DELTA_E = 12;
+
+/**
+ * True when every stop of a gradient is so close to the others that it will
+ * look like a flat fill (e.g. #0a0e12 → #131c26). False when the gradient can't
+ * be judged (fewer than two parseable stops) — we only warn when we're sure.
+ */
+export function isSubtleGradient(css: string): boolean {
+  const stops = gradientColors(css);
+  if (stops.length < 2) return false;
+  let max = 0;
+  for (let i = 0; i < stops.length; i++)
+    for (let j = i + 1; j < stops.length; j++) max = Math.max(max, deltaE(stops[i]!, stops[j]!));
+  return max < SUBTLE_GRADIENT_DELTA_E;
+}

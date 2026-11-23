@@ -26,7 +26,7 @@ import {
   type ThemeBase,
   type TokenKey,
 } from '@/src/themes/types';
-import { contrastRatio, toHex, toRgba, WCAG_AA_BODY } from '@/src/util/color';
+import { contrastRatio, isSubtleGradient, toHex, toRgba, WCAG_AA_BODY } from '@/src/util/color';
 
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
@@ -372,6 +372,17 @@ function onPasteInput(): void {
       detect.className = 'detect ok';
       const warn = parsed.warnings.length ? ` — ${parsed.warnings.length} note(s)` : '';
       detect.textContent = `Detected theme: “${parsed.theme.name}” ✓${warn}`;
+      // Non-blocking heads-up: an almost-flat gradient applies fine but reads as
+      // a solid color, which looks like "the gradient isn't working".
+      const grad = parsed.theme.effects?.appGradient;
+      if (grad && isSubtleGradient(grad)) {
+        const tip = document.createElement('div');
+        tip.className = 'detect-tip';
+        tip.textContent =
+          'Heads-up: its background gradient is very subtle (the colors are nearly identical), so it may look flat. ' +
+          'Ask the assistant for “a more visible gradient” if you want it to stand out.';
+        detect.appendChild(tip);
+      }
     }
   }
   if (aiStep === 4) $<HTMLButtonElement>('ai-next').disabled = !aiPendingTheme;

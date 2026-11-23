@@ -535,6 +535,11 @@ input[type='range'] {
 .detect.bad {
   color: #ff8e88;
 }
+.detect-tip {
+  margin-top: 6px;
+  color: #f2c879;
+  line-height: 1.45;
+}
 .modal-foot {
   display: flex;
   gap: 8px;

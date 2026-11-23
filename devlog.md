@@ -491,3 +491,14 @@ edit themes" button) and onto the editor as a proper wizard.
 
 Gate: compile clean, tests 137/137, lint clean, chrome build+zip. Still v0.1.6
 (unsubmitted iteration).
+
+## 2026-11-23 — AI gradients: visibility rule + "too subtle" warning
+
+- Diagnosed a user report ("gradient isn't working" on an AI-made Black Ops theme): the engine
+  emitted the gradient correctly; the AI chose near-identical stops (`#0a0e12 → #131c26`, ΔE≈8),
+  which renders as a flat fill.
+- Prompt: new rule that `appGradient` must be visibly a gradient and keep `text.primary` ≥ 4.5:1
+  against every stop.
+- Editor step 4: non-blocking amber heads-up when a pasted theme's gradient is near-flat
+  (`isSubtleGradient`, CIE76 ΔE < 12 across stops; built-ins all pass).
+- Step 3 hint: Claude shows long pastes as an attachment — expected; extra changes go in the box.
